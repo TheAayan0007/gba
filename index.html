@@ -291,7 +291,7 @@ main{position:relative;z-index:10;max-width:900px;margin:0 auto;padding:1.8rem 1
 <header>
   <div class="logo">GBA WEB PLAYER</div>
   <div class="subtitle">Game Boy Advance · Browser Emulator</div>
-  <div class="header-badge">▶ POWERED BY Aayan</div>
+  <div class="header-badge">▶ POWERED BY EMULATORJS</div>
 </header>
 
 <main>
@@ -437,20 +437,20 @@ main{position:relative;z-index:10;max-width:900px;margin:0 auto;padding:1.8rem 1
 </main>
 
 <script>
-/* ═══════════════════════════════════════════════════════════
+/* =============================================================
    STATE
-═══════════════════════════════════════════════════════════ */
+============================================================= */
 var romFile      = null;
 var savFile      = null;
-var savBytes     = null;   // Uint8Array — read immediately on file select
+var savBytes     = null;
 var romBlobUrl   = null;
 var currentSpeed = 1;
 var controlMode  = 'touch';
 var settingsOpen = false;
 
-/* ═══════════════════════════════════════════════════════════
-   FILE INPUT HANDLERS
-═══════════════════════════════════════════════════════════ */
+/* =============================================================
+   FILE INPUTS  (label+for pattern — works on all browsers)
+============================================================= */
 document.getElementById('rom-input').addEventListener('change', function() {
   if (this.files && this.files[0]) handleRom(this.files[0]);
   this.value = '';
@@ -463,61 +463,60 @@ document.getElementById('sav-input').addEventListener('change', function() {
 function handleRom(f) {
   var ext = f.name.split('.').pop().toLowerCase();
   if (!['gba','zip'].includes(ext)) {
-    setFileStatus('rom-status','err','[ ✗ Invalid file — need .gba or .zip ]');
+    setStatus('rom-status','err','[ Invalid file — need .gba or .zip ]');
     romFile = null; checkLaunch(); return;
   }
   romFile = f;
-  setFileStatus('rom-status','ok','[ ✓ '+f.name+' — '+(f.size/1024/1024).toFixed(2)+' MB ]');
+  setStatus('rom-status','ok','[ ' + f.name + ' — ' + (f.size/1024/1024).toFixed(2) + ' MB ]');
   checkLaunch();
 }
 
 async function handleSav(f) {
   var ext = f.name.split('.').pop().toLowerCase();
   if (!['sav','srm','sa','sa1','sa2'].includes(ext)) {
-    setFileStatus('sav-status','err','[ ✗ Invalid file — need .sav or .srm ]');
+    setStatus('sav-status','err','[ Invalid file — need .sav or .srm ]');
     savFile = null; savBytes = null;
     document.getElementById('sav-info').style.display = 'none';
     return;
   }
   savFile = f;
-  setFileStatus('sav-status','ok','[ Reading... ]');
+  setStatus('sav-status','ok','[ Reading... ]');
   try {
-    var buf = await f.arrayBuffer();
-    savBytes = new Uint8Array(buf);
-    setFileStatus('sav-status','ok','[ ✓ '+f.name+' — '+(savBytes.length/1024).toFixed(1)+' KB ]');
+    savBytes = new Uint8Array(await f.arrayBuffer());
+    setStatus('sav-status','ok','[ ' + f.name + ' — ' + (savBytes.length/1024).toFixed(1) + ' KB ready ]');
     document.getElementById('sav-info').style.display = 'block';
-  } catch(err) {
+  } catch(e) {
     savBytes = null;
-    setFileStatus('sav-status','err','[ ✗ Read error: '+err.message+' ]');
+    setStatus('sav-status','err','[ Read error: ' + e.message + ' ]');
     document.getElementById('sav-info').style.display = 'none';
   }
 }
 
-function setFileStatus(id, type, msg) {
+function setStatus(id, type, msg) {
   var el = document.getElementById(id);
   el.textContent = msg;
-  el.className = 'file-status' + (type ? ' '+type : '');
+  el.className = 'file-status' + (type ? ' ' + type : '');
 }
 
 function checkLaunch() {
   var btn = document.getElementById('launch-btn');
   if (romFile) {
     btn.style.display = 'block';
-    btn.innerHTML = '▶ &nbsp;LAUNCH '+romFile.name.replace(/\.(gba|zip)$/i,'').toUpperCase().substring(0,28);
+    btn.innerHTML = '&#9658; &nbsp;LAUNCH ' + romFile.name.replace(/\.(gba|zip)$/i,'').toUpperCase().substring(0,28);
   } else {
     btn.style.display = 'none';
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* =============================================================
    DRAG & DROP
-═══════════════════════════════════════════════════════════ */
+============================================================= */
 function setupDrop(cardId, handler) {
   var card = document.getElementById(cardId);
   card.addEventListener('dragenter', function(e){ e.preventDefault(); card.classList.add('drag-over'); });
   card.addEventListener('dragover',  function(e){ e.preventDefault(); card.classList.add('drag-over'); });
-  card.addEventListener('dragleave', function(e){ if(!card.contains(e.relatedTarget)) card.classList.remove('drag-over'); });
-  card.addEventListener('drop', function(e){
+  card.addEventListener('dragleave', function(e){ if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over'); });
+  card.addEventListener('drop', function(e) {
     e.preventDefault(); card.classList.remove('drag-over');
     if (e.dataTransfer.files[0]) handler(e.dataTransfer.files[0]);
   });
@@ -527,16 +526,15 @@ setupDrop('sav-card', handleSav);
 document.addEventListener('dragover', function(e){ e.preventDefault(); });
 document.addEventListener('drop',     function(e){ e.preventDefault(); });
 
-/* ═══════════════════════════════════════════════════════════
-   LAUNCH EMULATOR
-═══════════════════════════════════════════════════════════ */
+/* =============================================================
+   LAUNCH
+============================================================= */
 async function launchEmulator() {
   if (!romFile) return;
   setLoading(true, 'READING FILES...', 'PREPARING ROM');
 
   if (savFile && !savBytes) {
-    try { var buf = await savFile.arrayBuffer(); savBytes = new Uint8Array(buf); }
-    catch(e) { savBytes = null; }
+    try { savBytes = new Uint8Array(await savFile.arrayBuffer()); } catch(e) { savBytes = null; }
   }
 
   if (romBlobUrl) URL.revokeObjectURL(romBlobUrl);
@@ -552,9 +550,26 @@ async function launchEmulator() {
   applyControlMode(controlMode);
 
   await new Promise(function(r){ setTimeout(r, 200); });
+
+  /* ---- If we have a save, write it to IndexedDB BEFORE the emulator starts.
+          EmulatorJS mounts /home/web_user/retroarch/userdata via IDBFS and syncs
+          IDB -> MEMFS on startup, before retro_load_game is called.
+          Writing directly to IDB here means the core will find the save on first load. */
+  if (savBytes && savBytes.length > 0) {
+    setLoading(true, 'INJECTING SAVE...', 'WRITING TO INDEXED DB');
+    var savePath = '/home/web_user/retroarch/userdata/saves/' + gameName + '.srm';
+    try {
+      await writeToIDB(savePath, savBytes);
+      // Also write .sav variant
+      await writeToIDB('/home/web_user/retroarch/userdata/saves/' + gameName + '.sav', savBytes);
+      console.log('[GBA SAVE] Wrote save to IDB at', savePath);
+    } catch(e) {
+      console.warn('[GBA SAVE] IDB pre-write failed:', e.message, '— will try MEMFS fallback');
+    }
+  }
+
   setLoading(true, 'LOADING EMULATOR...', 'CONNECTING TO CDN');
 
-  /* EJS globals — must be set BEFORE loader.js */
   window.EJS_player          = '#game';
   window.EJS_gameUrl         = romBlobUrl;
   window.EJS_core            = 'gba';
@@ -564,352 +579,282 @@ async function launchEmulator() {
   window.EJS_backgroundColor = '#000000';
   window.EJS_VirtualGamepad  = false;
 
-  /* ── SAVE INJECTION SETUP ─────────────────────────────────
-   * The mGBA core reads battery-save at ROM load time from FS.
-   * Strategy:
-   *   1. EJS_onGameStart: get FS, scan for ANY .srm/.sav files
-   *      the core created, overwrite them ALL + write to known paths.
-   *   2. Also re-inject 2s later (core may write blank save on first
-   *      frame — we overwrite it again).
-   *   3. Then call retro reset so core re-reads save from FS.
-   * ──────────────────────────────────────────────────────── */
-  var _savBytes = savBytes;   // close over current value
+  /* Capture for closures */
+  var _savBytes = savBytes;
   var _gameName = gameName;
-
   window._saveInjected = false;
 
   if (_savBytes && _savBytes.length > 0) {
+    /* MEMFS fallback: also write into the virtual filesystem once it is available.
+       This handles the case where IDB mounting doesn't pick up our pre-written data. */
     window.EJS_onGameStart = function() {
-      // Slight delay: let core write its initial blank save first
-      setTimeout(function(){
-        doInjectSave(_gameName, _savBytes, true);
-      }, 1500);
+      setTimeout(function() { memfsInject(_gameName, _savBytes); }, 200);
     };
   } else {
     window.EJS_onGameStart = null;
   }
 
-  var oldScript = document.getElementById('ejs-loader');
-  if (oldScript) oldScript.remove();
-  var script = document.createElement('script');
-  script.id  = 'ejs-loader';
-  script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-  script.onload = function() {
+  var old = document.getElementById('ejs-loader');
+  if (old) old.remove();
+  var scr = document.createElement('script');
+  scr.id  = 'ejs-loader';
+  scr.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+  scr.onload = function() {
     setLoading(false);
     setTimeout(function(){ applySpeed(currentSpeed); }, 4000);
-    /* Fallback: if EJS_onGameStart never fired, start polling */
     if (_savBytes && _savBytes.length > 0 && !window._saveInjected) {
-      pollAndInject(_gameName, _savBytes);
+      /* Extra fallback poll if EJS_onGameStart never fired */
+      pollMemfsInject(_gameName, _savBytes);
     }
   };
-  script.onerror = function() {
+  scr.onerror = function() {
     setLoading(false);
     document.getElementById('game').innerHTML =
       "<div style='display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:1rem;padding:2rem;text-align:center;'>" +
-      "<div style='font-family:\"Press Start 2P\",monospace;font-size:.7rem;color:#ef4444;'>CDN ERROR</div>" +
-      "<div style='font-size:.62rem;color:#64748b;line-height:1.9;'>Could not reach EmulatorJS CDN.<br>Check your connection.</div>" +
-      "<button onclick='resetEmulator()' style='margin-top:.5rem;padding:.5rem 1.2rem;border:1px solid #7c3aed;background:transparent;color:#7c3aed;font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;'>← BACK</button></div>";
+      "<div style='font-family:monospace;font-size:.9rem;color:#ef4444;'>CDN ERROR</div>" +
+      "<div style='font-size:.62rem;color:#64748b;line-height:1.9;margin-top:.5rem;'>Could not reach EmulatorJS CDN.<br>Check your internet connection.</div>" +
+      "<button onclick='resetEmulator()' style='margin-top:1rem;padding:.5rem 1.2rem;border:1px solid #7c3aed;background:transparent;color:#7c3aed;font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;'>&#8592; BACK</button></div>";
   };
-  document.body.appendChild(script);
+  document.body.appendChild(scr);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   POLL UNTIL FS READY (fallback if EJS_onGameStart never fires)
-═══════════════════════════════════════════════════════════ */
-function pollAndInject(gameName, bytes) {
+/* =============================================================
+   INDEXEDDB PRE-WRITE
+   ---------------------------------------------------------------
+   EmulatorJS uses Emscripten's IDBFS to persist the RetroArch
+   userdata directory.  IDBFS stores each file as an object in an
+   IDB database whose name equals the mount-point path and whose
+   object store is "FILE_DATA".  The record format is:
+     { timestamp: <ms>, mode: 33188, contents: Uint8Array }
+
+   By writing here BEFORE loader.js runs, the IDBFS sync that
+   happens during Module startup will find the file and map it
+   into MEMFS, so retro_load_game() sees it immediately.
+============================================================= */
+function writeToIDB(filePath, bytes) {
+  return new Promise(function(resolve, reject) {
+    /* IDBFS database name = the parent directory that is mounted.
+       EmulatorJS mounts /home/web_user/retroarch/userdata          */
+    var DB_NAME  = '/home/web_user/retroarch/userdata';
+    var STORE    = 'FILE_DATA';
+
+    var req = indexedDB.open(DB_NAME);
+    req.onupgradeneeded = function(e) {
+      /* Create store if first time */
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE);
+      }
+    };
+    req.onerror = function() { reject(new Error('IDB open failed: ' + req.error)); };
+    req.onsuccess = function(e) {
+      var db = e.target.result;
+      /* Ensure the store exists (older DB might not have it) */
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.close();
+        /* Re-open with bumped version to create the store */
+        var req2 = indexedDB.open(DB_NAME, db.version + 1);
+        req2.onupgradeneeded = function(ev) {
+          ev.target.result.createObjectStore(STORE);
+        };
+        req2.onsuccess = function(ev) { doWrite(ev.target.result); };
+        req2.onerror   = function()   { reject(new Error('IDB upgrade failed')); };
+      } else {
+        doWrite(db);
+      }
+    };
+
+    function doWrite(db) {
+      try {
+        var tx      = db.transaction(STORE, 'readwrite');
+        var store   = tx.objectStore(STORE);
+        var record  = { timestamp: Date.now(), mode: 33188, contents: bytes };
+        var putReq  = store.put(record, filePath);
+        putReq.onsuccess = function() { db.close(); resolve(); };
+        putReq.onerror   = function() { db.close(); reject(new Error('IDB put failed: ' + putReq.error)); };
+      } catch(err) { reject(err); }
+    }
+  });
+}
+
+/* =============================================================
+   MEMFS FALLBACK INJECTION
+   (runs after EJS_onGameStart — handles edge cases where
+    the IDB write didn't get synced in time)
+============================================================= */
+function pollMemfsInject(gameName, bytes) {
   var tries = 0;
   function attempt() {
     if (window._saveInjected) return;
     var fs = getFS();
-    if (fs) {
-      setTimeout(function(){ doInjectSave(gameName, bytes, true); }, 1500);
-      return;
-    }
-    if (++tries < 100) setTimeout(attempt, 300);
-    else showBanner('err', '✗ Save timed out — emulator FS never became available');
+    if (fs) { setTimeout(function(){ memfsInject(gameName, bytes); }, 500); return; }
+    if (++tries < 80) setTimeout(attempt, 300);
+    else showBanner('err', 'Save load timed out');
   }
-  setTimeout(attempt, 1000);
+  setTimeout(attempt, 2000);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   GET FS — tries all known locations
-═══════════════════════════════════════════════════════════ */
 function getFS() {
   var emu = window.EJS_emulator;
   if (!emu) return null;
-  // EmulatorJS stable: emu.FS
-  // Some builds: emu.Module.FS
   return emu.FS || (emu.Module && emu.Module.FS) || null;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CORE SAVE INJECTION
-   ─────────────────────────────────────────────────────────
-   doInjectSave does two things:
-   1. Scan the ENTIRE virtual FS for any existing .srm/.sav
-      files and overwrite them (these are the files the core
-      actually uses — path/name determined by core, not us).
-   2. Also write to known canonical paths as a fallback.
-   3. If andReset=true, soft-reset the core so it re-reads
-      the save from FS on next game load.
-═══════════════════════════════════════════════════════════ */
-function doInjectSave(gameName, bytes, andReset) {
+function memfsInject(gameName, bytes) {
   if (window._saveInjected) return;
   var fs = getFS();
-  if (!fs) {
-    showBanner('err', '✗ Emulator filesystem not ready — save not loaded');
-    return;
-  }
+  if (!fs) return;
   window._saveInjected = true;
 
-  var written = 0;
-  var foundPaths = [];
-
-  /* ── STEP 1: Scan entire FS and overwrite any save files ── */
-  function scanDir(path) {
-    try {
-      var entries = fs.readdir(path);
-      for (var i = 0; i < entries.length; i++) {
-        var entry = entries[i];
-        if (entry === '.' || entry === '..') continue;
-        var full = (path === '/' ? '' : path) + '/' + entry;
-        try {
-          var stat = fs.stat(full);
-          if (fs.isDir(stat.mode)) {
-            scanDir(full);
-          } else if (/\.(srm|sav|sa[0-9]?)$/i.test(entry)) {
-            console.log('[GBA SAVE] Found save file in FS:', full, '('+stat.size+' bytes)');
-            foundPaths.push(full);
-            try {
-              fs.writeFile(full, bytes);
-              written++;
-              console.log('[GBA SAVE] Overwritten:', full);
-            } catch(e) {
-              console.warn('[GBA SAVE] Could not overwrite', full, e.message);
-            }
-          }
-        } catch(e) {}
-      }
-    } catch(e) {}
-  }
-  scanDir('/');
-
-  /* ── STEP 2: Also write to canonical known paths ── */
-  var knownPaths = [
-    '/home/web_user/retroarch/userdata/saves/' + gameName + '.srm',
-    '/home/web_user/retroarch/userdata/saves/' + gameName + '.sav',
-    '/data/saves/' + gameName + '.srm',
-    '/data/saves/' + gameName + '.sav',
-    '/saves/' + gameName + '.srm',
-    '/saves/' + gameName + '.sav'
-  ];
-
-  for (var k = 0; k < knownPaths.length; k++) {
-    /* Skip if we already wrote this path via scan */
-    if (foundPaths.indexOf(knownPaths[k]) !== -1) continue;
-    /* Ensure directory exists */
-    var dir = knownPaths[k].substring(0, knownPaths[k].lastIndexOf('/'));
-    ensureDir(fs, dir);
-    try {
-      fs.writeFile(knownPaths[k], bytes);
-      written++;
-      console.log('[GBA SAVE] Written to known path:', knownPaths[k]);
-    } catch(e) {
-      console.warn('[GBA SAVE] Known path write failed:', knownPaths[k], e.message);
-    }
-  }
-
-  console.log('[GBA SAVE] Total writes:', written, '| Found existing files:', foundPaths.length);
-
-  if (written === 0) {
-    showBanner('err', '✗ Could not write save file (0 writes succeeded) — see console');
-    return;
-  }
-
-  /* ── STEP 3: Reset the core so it re-reads save from FS ── */
-  if (andReset) {
-    tryResetCore(function() {
-      showBanner('ok', '✓ Save loaded ('+( bytes.length/1024).toFixed(1)+' KB) — progress restored!');
-      document.getElementById('save-load-tag').style.display = 'flex';
-    });
-  } else {
-    showBanner('ok', '✓ Save written ('+( bytes.length/1024).toFixed(1)+' KB)');
-    document.getElementById('save-load-tag').style.display = 'flex';
-  }
-}
-
-/* ── mkdir -p equivalent ── */
-function ensureDir(fs, path) {
-  var parts = path.replace(/^\//, '').split('/');
+  /* Create directory tree */
+  var parts = 'home/web_user/retroarch/userdata/saves'.split('/');
   var cur = '';
   for (var i = 0; i < parts.length; i++) {
     cur += '/' + parts[i];
     try { fs.mkdir(cur); } catch(e) {}
   }
-}
 
-/* ── Soft reset so core re-reads save from FS ── */
-function tryResetCore(cb) {
-  try {
-    var emu = window.EJS_emulator;
-    /* Try various reset APIs exposed by EmulatorJS */
-    if (emu && typeof emu.loadSaveFiles === 'function') {
-      emu.loadSaveFiles();
-      console.log('[GBA SAVE] Called emu.loadSaveFiles()');
-    }
-    if (emu && emu.gameManager && typeof emu.gameManager.loadSaveFiles === 'function') {
-      emu.gameManager.loadSaveFiles();
-    }
-    /* Soft reset via RetroArch: makes core re-init including re-reading saves */
-    if (emu && emu.Module && typeof emu.Module._cmd_reset_game === 'function') {
-      emu.Module._cmd_reset_game();
-      console.log('[GBA SAVE] Called cmd_reset_game');
-    }
-  } catch(e) {
-    console.warn('[GBA SAVE] Reset core error:', e.message);
+  var wrote = false;
+  var exts  = ['.srm', '.sav'];
+  for (var j = 0; j < exts.length; j++) {
+    var p = '/home/web_user/retroarch/userdata/saves/' + gameName + exts[j];
+    try { fs.writeFile(p, bytes); wrote = true; console.log('[GBA SAVE] MEMFS wrote:', p); }
+    catch(e) { console.warn('[GBA SAVE] MEMFS write failed:', p, e.message); }
   }
-  if (cb) cb();
+
+  if (wrote) {
+    /* Sync MEMFS -> IDB so the core picks it up */
+    try {
+      var emu = window.EJS_emulator;
+      if (emu && emu.FS && typeof emu.FS.syncfs === 'function') {
+        emu.FS.syncfs(false, function(err) {
+          if (err) console.warn('[GBA SAVE] syncfs err:', err);
+          else console.log('[GBA SAVE] syncfs complete');
+        });
+      }
+    } catch(e) {}
+    showBanner('ok', 'Save file active (' + (bytes.length/1024).toFixed(1) + ' KB)');
+    document.getElementById('save-load-tag').style.display = 'flex';
+  } else {
+    showBanner('err', 'MEMFS write failed — see console');
+  }
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* =============================================================
    EXPORT SAVE
-═══════════════════════════════════════════════════════════ */
+============================================================= */
 function exportSave() {
   var emu = window.EJS_emulator;
 
-  /* Try built-in API */
+  /* 1. Built-in API */
   if (emu && typeof emu.downloadSaveFiles === 'function') {
     emu.downloadSaveFiles();
-    showBanner('ok', '✓ Save exported via EmulatorJS');
+    showBanner('ok', 'Save exported via EmulatorJS');
     return;
   }
 
-  /* Fallback: scan FS and download first save found */
+  /* 2. Read from MEMFS */
   var fs = getFS();
-  if (!fs) { showBanner('info', 'ℹ Emulator not running yet'); return; }
-
-  var gameName = document.getElementById('game-name-display').textContent;
-  /* First try canonical paths */
-  var paths = [
-    '/home/web_user/retroarch/userdata/saves/'+gameName+'.srm',
-    '/home/web_user/retroarch/userdata/saves/'+gameName+'.sav',
-    '/data/saves/'+gameName+'.srm',
-    '/data/saves/'+gameName+'.sav'
-  ];
-
-  for (var i = 0; i < paths.length; i++) {
-    try {
-      var data = fs.readFile(paths[i]);
-      if (data && data.length > 0) {
-        downloadBytes(data, gameName+'.sav');
-        showBanner('ok', '✓ Save exported: '+gameName+'.sav ('+( data.length/1024).toFixed(1)+' KB)');
-        return;
-      }
-    } catch(e) {}
+  if (fs) {
+    var name  = document.getElementById('game-name-display').textContent;
+    var paths = [
+      '/home/web_user/retroarch/userdata/saves/' + name + '.srm',
+      '/home/web_user/retroarch/userdata/saves/' + name + '.sav'
+    ];
+    for (var i = 0; i < paths.length; i++) {
+      try {
+        var data = fs.readFile(paths[i]);
+        if (data && data.length > 0) { downloadBytes(data, name + '.sav'); showBanner('ok', 'Save exported: ' + name + '.sav'); return; }
+      } catch(e) {}
+    }
   }
 
-  /* Scan FS for any save file */
-  var found = null;
-  function scanForExport(path) {
-    if (found) return;
-    try {
-      var entries = fs.readdir(path);
-      for (var j = 0; j < entries.length; j++) {
-        if (entries[j] === '.' || entries[j] === '..') continue;
-        var full = (path === '/' ? '' : path) + '/' + entries[j];
-        try {
-          var stat = fs.stat(full);
-          if (fs.isDir(stat.mode)) scanForExport(full);
-          else if (/\.(srm|sav)$/i.test(entries[j]) && !found) {
-            var d = fs.readFile(full);
-            if (d && d.length > 0) { found = { data: d, name: entries[j] }; }
-          }
-        } catch(e2) {}
-      }
-    } catch(e) {}
-  }
-  scanForExport('/');
+  /* 3. Read from IDB */
+  var name = document.getElementById('game-name-display').textContent;
+  readFromIDB('/home/web_user/retroarch/userdata/saves/' + name + '.srm')
+    .then(function(data) {
+      if (data) { downloadBytes(data, name + '.sav'); showBanner('ok', 'Save exported from IDB: ' + name + '.sav'); }
+      else showBanner('err', 'No save found — save in-game first then export');
+    })
+    .catch(function() { showBanner('err', 'No save data found yet'); });
+}
 
-  if (found) {
-    downloadBytes(found.data, found.name);
-    showBanner('ok', '✓ Save exported: '+found.name);
-    return;
-  }
-
-  showBanner('err', '✗ No save data found — play and save in-game first');
+function readFromIDB(filePath) {
+  return new Promise(function(resolve) {
+    var req = indexedDB.open('/home/web_user/retroarch/userdata');
+    req.onerror   = function() { resolve(null); };
+    req.onsuccess = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('FILE_DATA')) { db.close(); resolve(null); return; }
+      try {
+        var tx  = db.transaction('FILE_DATA','readonly');
+        var get = tx.objectStore('FILE_DATA').get(filePath);
+        get.onsuccess = function() {
+          db.close();
+          resolve(get.result && get.result.contents ? get.result.contents : null);
+        };
+        get.onerror = function() { db.close(); resolve(null); };
+      } catch(e) { db.close(); resolve(null); }
+    };
+  });
 }
 
 function downloadBytes(data, filename) {
-  var blob = new Blob([data], { type: 'application/octet-stream' });
+  var blob = new Blob([data], {type:'application/octet-stream'});
   var url  = URL.createObjectURL(blob);
   var a    = document.createElement('a');
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* =============================================================
    RESET
-═══════════════════════════════════════════════════════════ */
+============================================================= */
 function resetEmulator() {
   var old = document.getElementById('ejs-loader');
   if (old) old.remove();
   if (romBlobUrl) { URL.revokeObjectURL(romBlobUrl); romBlobUrl = null; }
-  Object.keys(window).filter(function(k){ return k.startsWith('EJS_'); }).forEach(function(k){
-    try { delete window[k]; } catch(e) {}
-  });
-  document.getElementById('game').innerHTML          = '';
+  Object.keys(window).filter(function(k){ return k.startsWith('EJS_'); }).forEach(function(k){ try { delete window[k]; } catch(e){} });
+  document.getElementById('game').innerHTML = '';
   document.getElementById('emulator-section').style.display = 'none';
   document.getElementById('upload-section').style.display   = 'flex';
-  setLoading(false);
-  hideBanner();
+  setLoading(false); hideBanner();
   if (settingsOpen) {
     settingsOpen = false;
     document.getElementById('settings-panel').classList.remove('open');
     document.getElementById('btn-settings').classList.remove('active');
   }
   currentSpeed = 1;
-  document.querySelectorAll('.speed-btn').forEach(function(b){
-    b.classList.toggle('active', b.dataset.speed === '1');
-  });
-  document.getElementById('speed-tag').textContent       = '1×';
+  document.querySelectorAll('.speed-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.speed === '1'); });
+  document.getElementById('speed-tag').textContent = '1x';
   document.getElementById('save-load-tag').style.display = 'none';
   Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* =============================================================
    UI HELPERS
-═══════════════════════════════════════════════════════════ */
+============================================================= */
 var bannerTimer = null;
 function showBanner(type, msg) {
   var b = document.getElementById('save-banner');
-  b.className = type; b.textContent = msg;
-  b.style.display = 'block'; b.style.opacity = '1';
+  b.className = type; b.textContent = msg; b.style.display = 'block'; b.style.opacity = '1';
   if (bannerTimer) clearTimeout(bannerTimer);
-  bannerTimer = setTimeout(function(){
-    b.style.opacity = '0';
-    setTimeout(function(){ b.style.display = 'none'; }, 500);
-  }, 6000);
+  bannerTimer = setTimeout(function(){ b.style.opacity = '0'; setTimeout(function(){ b.style.display = 'none'; }, 500); }, 6000);
 }
-function hideBanner() {
-  var b = document.getElementById('save-banner');
-  b.style.display = 'none';
-}
+function hideBanner() { var b = document.getElementById('save-banner'); b.style.display = 'none'; }
 function setLoading(show, title, sub) {
   var ov = document.getElementById('loading-overlay');
   if (show) {
-    document.getElementById('loading-text').textContent = title||'LOADING...';
-    document.getElementById('loading-sub').textContent  = sub  ||'PLEASE WAIT';
+    document.getElementById('loading-text').textContent = title || 'LOADING...';
+    document.getElementById('loading-sub').textContent  = sub   || 'PLEASE WAIT';
     ov.classList.add('show');
-  } else {
-    ov.classList.remove('show');
-  }
+  } else { ov.classList.remove('show'); }
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* =============================================================
    SETTINGS
-═══════════════════════════════════════════════════════════ */
+============================================================= */
 function toggleSettings() {
   settingsOpen = !settingsOpen;
   document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
@@ -917,18 +862,16 @@ function toggleSettings() {
 }
 function setSpeed(val) {
   currentSpeed = val;
-  document.querySelectorAll('.speed-btn').forEach(function(b){
-    b.classList.toggle('active', parseFloat(b.dataset.speed) === val);
-  });
-  document.getElementById('speed-tag').textContent = val+'×';
+  document.querySelectorAll('.speed-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.speed) === val); });
+  document.getElementById('speed-tag').textContent = val + 'x';
   applySpeed(val);
 }
 function applySpeed(val) {
   try {
     var emu = window.EJS_emulator;
     if (!emu) return;
-    if (typeof emu.setSpeed === 'function')                                  { emu.setSpeed(val); return; }
-    if (emu.gameManager && typeof emu.gameManager.setSpeed === 'function')   { emu.gameManager.setSpeed(val); }
+    if (typeof emu.setSpeed === 'function')                                { emu.setSpeed(val); return; }
+    if (emu.gameManager && typeof emu.gameManager.setSpeed === 'function') { emu.gameManager.setSpeed(val); }
   } catch(e) {}
 }
 function setControlMode(mode) { controlMode = mode; applyControlMode(mode); }
@@ -939,40 +882,38 @@ function applyControlMode(mode) {
   var note    = document.getElementById('ctrl-note');
   var mTag    = document.getElementById('ctrl-mode-tag');
   if (mode === 'touch') {
-    overlay.classList.add('visible');
-    kbOpt.classList.remove('active'); tOpt.classList.add('active');
+    overlay.classList.add('visible'); kbOpt.classList.remove('active'); tOpt.classList.add('active');
     note.textContent = 'Touch mode: D-Pad, A, B, L, R, Start, Select shown over the game.';
-    mTag.textContent = '👆 Touch Controls';
+    mTag.textContent = 'Touch Controls';
   } else {
-    overlay.classList.remove('visible');
-    kbOpt.classList.add('active'); tOpt.classList.remove('active');
+    overlay.classList.remove('visible'); kbOpt.classList.add('active'); tOpt.classList.remove('active');
     note.textContent = 'Keyboard mode: Arrow keys + Z/X/Enter/Shift/A/S. No on-screen buttons.';
-    mTag.textContent = '⌨ Keyboard';
+    mTag.textContent = 'Keyboard';
     Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   TOUCH → KEYBOARD EVENT SIMULATION
-═══════════════════════════════════════════════════════════ */
+/* =============================================================
+   TOUCH CONTROLS
+============================================================= */
 var KEY_MAP = {
-  'tb-up':     { key:'ArrowUp',    code:'ArrowUp',    keyCode:38 },
-  'tb-down':   { key:'ArrowDown',  code:'ArrowDown',  keyCode:40 },
-  'tb-left':   { key:'ArrowLeft',  code:'ArrowLeft',  keyCode:37 },
-  'tb-right':  { key:'ArrowRight', code:'ArrowRight', keyCode:39 },
-  'tb-a':      { key:'z',          code:'KeyZ',       keyCode:90 },
-  'tb-b':      { key:'x',          code:'KeyX',       keyCode:88 },
-  'tb-l':      { key:'a',          code:'KeyA',       keyCode:65 },
-  'tb-r':      { key:'s',          code:'KeyS',       keyCode:83 },
-  'tb-start':  { key:'Enter',      code:'Enter',      keyCode:13 },
-  'tb-select': { key:'Shift',      code:'ShiftLeft',  keyCode:16 }
+  'tb-up':     {key:'ArrowUp',    code:'ArrowUp',    keyCode:38},
+  'tb-down':   {key:'ArrowDown',  code:'ArrowDown',  keyCode:40},
+  'tb-left':   {key:'ArrowLeft',  code:'ArrowLeft',  keyCode:37},
+  'tb-right':  {key:'ArrowRight', code:'ArrowRight', keyCode:39},
+  'tb-a':      {key:'z',          code:'KeyZ',       keyCode:90},
+  'tb-b':      {key:'x',          code:'KeyX',       keyCode:88},
+  'tb-l':      {key:'a',          code:'KeyA',       keyCode:65},
+  'tb-r':      {key:'s',          code:'KeyS',       keyCode:83},
+  'tb-start':  {key:'Enter',      code:'Enter',      keyCode:13},
+  'tb-select': {key:'Shift',      code:'ShiftLeft',  keyCode:16}
 };
 var heldKeys = {};
 function fireKey(type, k) {
-  var opts = { key:k.key, code:k.code, keyCode:k.keyCode, which:k.keyCode, bubbles:true, cancelable:true };
-  try { window.dispatchEvent(new KeyboardEvent(type, opts)); }   catch(e){}
-  try { document.dispatchEvent(new KeyboardEvent(type, opts)); } catch(e){}
-  try { var c = document.querySelector('#game canvas'); if(c) c.dispatchEvent(new KeyboardEvent(type,opts)); } catch(e){}
+  var o = {key:k.key,code:k.code,keyCode:k.keyCode,which:k.keyCode,bubbles:true,cancelable:true};
+  try { window.dispatchEvent(new KeyboardEvent(type, o)); }   catch(e){}
+  try { document.dispatchEvent(new KeyboardEvent(type, o)); } catch(e){}
+  try { var c = document.querySelector('#game canvas'); if(c) c.dispatchEvent(new KeyboardEvent(type,o)); } catch(e){}
 }
 function pressBtn(id) {
   var el = document.getElementById(id); if(el) el.classList.add('pressed');
@@ -984,40 +925,11 @@ function releaseBtn(id) {
   var k = KEY_MAP[id]; if(!k || !heldKeys[id]) return;
   delete heldKeys[id]; fireKey('keyup', k);
 }
-
-/* Multi-touch */
 var touchMap = {};
-function btnFromPoint(x,y) {
-  var el = document.elementFromPoint(x,y);
-  if(!el) return null;
-  var b = el.closest && el.closest('.t-btn');
-  return b ? b.id : null;
-}
-function onTouchStart(e) {
-  e.preventDefault();
-  for(var i=0;i<e.changedTouches.length;i++){
-    var t=e.changedTouches[i], id=btnFromPoint(t.clientX,t.clientY);
-    if(id){ touchMap[t.identifier]=id; pressBtn(id); }
-  }
-}
-function onTouchEnd(e) {
-  e.preventDefault();
-  for(var i=0;i<e.changedTouches.length;i++){
-    var t=e.changedTouches[i], id=touchMap[t.identifier];
-    if(id){ delete touchMap[t.identifier];
-      if(Object.values(touchMap).indexOf(id)===-1) releaseBtn(id); }
-  }
-}
-function onTouchMove(e) {
-  e.preventDefault();
-  for(var i=0;i<e.changedTouches.length;i++){
-    var t=e.changedTouches[i], prev=touchMap[t.identifier], next=btnFromPoint(t.clientX,t.clientY);
-    if(prev!==next){
-      if(prev){ delete touchMap[t.identifier]; if(Object.values(touchMap).indexOf(prev)===-1) releaseBtn(prev); }
-      if(next){ touchMap[t.identifier]=next; pressBtn(next); }
-    }
-  }
-}
+function btnFromPoint(x,y) { var el=document.elementFromPoint(x,y); if(!el) return null; var b=el.closest&&el.closest('.t-btn'); return b?b.id:null; }
+function onTouchStart(e) { e.preventDefault(); for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i],id=btnFromPoint(t.clientX,t.clientY);if(id){touchMap[t.identifier]=id;pressBtn(id);}} }
+function onTouchEnd(e)   { e.preventDefault(); for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i],id=touchMap[t.identifier];if(id){delete touchMap[t.identifier];if(Object.values(touchMap).indexOf(id)===-1)releaseBtn(id);}} }
+function onTouchMove(e)  { e.preventDefault(); for(var i=0;i<e.changedTouches.length;i++){var t=e.changedTouches[i],prev=touchMap[t.identifier],next=btnFromPoint(t.clientX,t.clientY);if(prev!==next){if(prev){delete touchMap[t.identifier];if(Object.values(touchMap).indexOf(prev)===-1)releaseBtn(prev);}if(next){touchMap[t.identifier]=next;pressBtn(next);}}} }
 var tOv = document.getElementById('touch-overlay');
 tOv.addEventListener('touchstart',  onTouchStart, {passive:false});
 tOv.addEventListener('touchend',    onTouchEnd,   {passive:false});
@@ -1025,14 +937,12 @@ tOv.addEventListener('touchcancel', onTouchEnd,   {passive:false});
 tOv.addEventListener('touchmove',   onTouchMove,  {passive:false});
 Object.keys(KEY_MAP).forEach(function(id){
   var el=document.getElementById(id); if(!el) return;
-  el.addEventListener('mousedown',  function(e){ e.preventDefault(); pressBtn(id); });
-  el.addEventListener('mouseup',    function(e){ e.preventDefault(); releaseBtn(id); });
-  el.addEventListener('mouseleave', function(){ releaseBtn(id); });
+  el.addEventListener('mousedown',  function(e){e.preventDefault();pressBtn(id);});
+  el.addEventListener('mouseup',    function(e){e.preventDefault();releaseBtn(id);});
+  el.addEventListener('mouseleave', function(){releaseBtn(id);});
 });
-window.addEventListener('blur', function(){ Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); }); });
-document.addEventListener('visibilitychange', function(){
-  if(document.hidden) Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
-});
+window.addEventListener('blur', function(){ Object.keys(KEY_MAP).forEach(function(id){releaseBtn(id);}); });
+document.addEventListener('visibilitychange', function(){ if(document.hidden) Object.keys(KEY_MAP).forEach(function(id){releaseBtn(id);}); });
 </script>
 </body>
 </html>
