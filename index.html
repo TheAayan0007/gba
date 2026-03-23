@@ -6,170 +6,312 @@
 <title>GBA Web Player</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:#0a0a12; --surface:#12121e; --card:#1a1a2e; --border:#2a2a4a;
-  --accent:#7c3aed; --accent2:#06b6d4; --accent3:#f59e0b;
+:root{
+  --bg:#0a0a12;--surface:#12121e;--card:#1a1a2e;--border:#2a2a4a;
+  --accent:#7c3aed;--accent2:#06b6d4;--accent3:#f59e0b;
   --glow:0 0 20px #7c3aed88,0 0 40px #7c3aed44;
   --glow2:0 0 20px #06b6d488,0 0 40px #06b6d444;
-  --text:#e2e8f0; --muted:#64748b; --danger:#ef4444;
+  --text:#e2e8f0;--muted:#64748b;--danger:#ef4444;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;touch-action:manipulation;}
-body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999;}
-body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,58,237,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  min-height:100vh;overflow-x:hidden;
+  /* prevent long-press menus on mobile */
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+  touch-action:manipulation;
+}
+body::before{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);
+  pointer-events:none;z-index:9999;}
+body::after{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(124,58,237,.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(124,58,237,.04) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;}
 
-/* HEADER */
-header{position:relative;z-index:10;text-align:center;padding:2rem 1rem 1.2rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(124,58,237,0.08) 0%,transparent 100%);}
-.logo{font-family:'Press Start 2P',monospace;font-size:clamp(0.8rem,3.5vw,1.6rem);background:linear-gradient(135deg,#a855f7,#06b6d4,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.5;}
-.subtitle{font-family:'Orbitron',sans-serif;font-size:0.6rem;color:var(--muted);letter-spacing:.4em;text-transform:uppercase;margin-top:.5rem;}
-.header-badge{display:inline-block;margin-top:.6rem;padding:.2rem .8rem;border:1px solid var(--accent);border-radius:2px;font-size:.5rem;color:var(--accent2);letter-spacing:.2em;font-family:'Orbitron',sans-serif;box-shadow:var(--glow2);}
+/* ── HEADER ── */
+header{position:relative;z-index:10;text-align:center;padding:2rem 1rem 1.2rem;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(124,58,237,.08) 0%,transparent 100%);}
+.logo{font-family:'Press Start 2P',monospace;font-size:clamp(.8rem,3.5vw,1.6rem);
+  background:linear-gradient(135deg,#a855f7,#06b6d4,#f59e0b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.5;}
+.subtitle{font-family:'Orbitron',sans-serif;font-size:.6rem;color:var(--muted);
+  letter-spacing:.4em;text-transform:uppercase;margin-top:.5rem;}
+.header-badge{display:inline-block;margin-top:.6rem;padding:.2rem .8rem;
+  border:1px solid var(--accent);border-radius:2px;font-size:.5rem;color:var(--accent2);
+  letter-spacing:.2em;font-family:'Orbitron',sans-serif;box-shadow:var(--glow2);}
 
-/* MAIN */
+/* ── MAIN ── */
 main{position:relative;z-index:10;max-width:900px;margin:0 auto;padding:1.8rem 1rem 3rem;}
 
-/* UPLOAD */
+/* ── UPLOAD SECTION ── */
 #upload-section{display:flex;flex-direction:column;gap:1.4rem;}
-.section-label{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.3em;color:var(--accent2);text-transform:uppercase;margin-bottom:.3rem;display:flex;align-items:center;gap:.5rem;}
+.section-label{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.3em;
+  color:var(--accent2);text-transform:uppercase;margin-bottom:.3rem;
+  display:flex;align-items:center;gap:.5rem;}
 .section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
-.upload-card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:1.5rem 1.5rem 1.5rem 1.8rem;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;}
-.upload-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--accent),var(--accent2));}
+.upload-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
+  padding:1.5rem 1.5rem 1.5rem 1.8rem;position:relative;overflow:hidden;
+  transition:border-color .2s,box-shadow .2s;}
+.upload-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+  background:linear-gradient(180deg,var(--accent),var(--accent2));}
 .upload-card.active-drop{border-color:var(--accent);box-shadow:var(--glow);}
 .upload-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
-.file-icon{width:46px;height:46px;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;background:var(--surface);flex-shrink:0;}
+.file-icon{width:46px;height:46px;border:1px solid var(--border);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;
+  background:var(--surface);flex-shrink:0;}
 .file-meta{flex:1;min-width:120px;}
-.file-meta h3{font-family:'Orbitron',sans-serif;font-size:.67rem;font-weight:700;color:var(--text);letter-spacing:.1em;}
+.file-meta h3{font-family:'Orbitron',sans-serif;font-size:.67rem;font-weight:700;
+  color:var(--text);letter-spacing:.1em;}
 .file-meta p{font-size:.6rem;color:var(--muted);margin-top:.2rem;}
 .file-status{font-size:.58rem;color:var(--muted);margin-top:.4rem;transition:color .3s;}
 .file-status.loaded{color:#22c55e;}
-.btn-upload{padding:.5rem 1.1rem;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.12em;cursor:pointer;border-radius:2px;text-transform:uppercase;transition:all .2s;white-space:nowrap;}
+.btn-upload{padding:.5rem 1.1rem;border:1px solid var(--accent);background:transparent;
+  color:var(--accent);font-family:'Orbitron',sans-serif;font-size:.58rem;
+  letter-spacing:.12em;cursor:pointer;border-radius:2px;text-transform:uppercase;
+  transition:all .2s;white-space:nowrap;}
 .btn-upload:hover{background:var(--accent);color:#fff;box-shadow:var(--glow);}
 .btn-upload.secondary{border-color:var(--accent2);color:var(--accent2);}
 .btn-upload.secondary:hover{background:var(--accent2);color:#000;}
 input[type="file"]{display:none;}
-.drop-hint{text-align:center;padding:.7rem;border:1px dashed var(--border);border-radius:2px;font-size:.58rem;color:var(--muted);margin-top:.9rem;transition:all .2s;}
+.drop-hint{text-align:center;padding:.7rem;border:1px dashed var(--border);border-radius:2px;
+  font-size:.58rem;color:var(--muted);margin-top:.9rem;transition:all .2s;}
 .drop-hint.dragging{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,.05);}
 .controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.45rem;}
-.ctrl-item{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:.45rem .75rem;display:flex;align-items:center;gap:.55rem;font-size:.58rem;}
-.key-badge{display:inline-flex;align-items:center;justify-content:center;min-width:26px;padding:.12rem .4rem;background:var(--card);border:1px solid var(--accent);border-radius:2px;font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--accent2);white-space:nowrap;flex-shrink:0;}
+.ctrl-item{background:var(--surface);border:1px solid var(--border);border-radius:2px;
+  padding:.45rem .75rem;display:flex;align-items:center;gap:.55rem;font-size:.58rem;}
+.key-badge{display:inline-flex;align-items:center;justify-content:center;min-width:26px;
+  padding:.12rem .4rem;background:var(--card);border:1px solid var(--accent);border-radius:2px;
+  font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--accent2);white-space:nowrap;flex-shrink:0;}
 .ctrl-desc{color:var(--muted);}
-.notice{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:2px;padding:.75rem 1rem;font-size:.58rem;color:#fbbf24;line-height:1.6;}
+.notice{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:2px;
+  padding:.75rem 1rem;font-size:.58rem;color:#fbbf24;line-height:1.6;}
 .notice strong{color:var(--accent3);}
-
-/* LAUNCH BTN */
-#launch-btn{width:100%;padding:1rem;background:linear-gradient(135deg,var(--accent) 0%,#9333ea 100%);border:none;color:#fff;font-family:'Press Start 2P',monospace;font-size:.75rem;letter-spacing:.1em;cursor:pointer;border-radius:3px;position:relative;overflow:hidden;transition:all .2s;box-shadow:0 4px 20px rgba(124,58,237,.4);display:none;}
-#launch-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:shimmer 2.5s infinite;}
+#launch-btn{width:100%;padding:1rem;
+  background:linear-gradient(135deg,var(--accent) 0%,#9333ea 100%);
+  border:none;color:#fff;font-family:'Press Start 2P',monospace;font-size:.75rem;
+  letter-spacing:.1em;cursor:pointer;border-radius:3px;position:relative;overflow:hidden;
+  transition:all .2s;box-shadow:0 4px 20px rgba(124,58,237,.4);display:none;}
+#launch-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  animation:shimmer 2.5s infinite;}
 @keyframes shimmer{0%{left:-100%}100%{left:200%}}
 #launch-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.6);}
 
-/* EMU SECTION */
+/* ── EMU SECTION ── */
 #emulator-section{display:none;flex-direction:column;gap:.8rem;}
-
-/* EMU TOP BAR */
-.emu-topbar{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:.6rem 1rem;}
-.game-title-display{font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:700;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.emu-topbar{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--border);border-radius:4px;padding:.6rem 1rem;}
+.game-title-display{font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:700;
+  color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .game-title-display span{color:var(--accent2);}
 .emu-btns{display:flex;gap:.5rem;align-items:center;}
-.btn-emu{padding:.35rem .75rem;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.1em;cursor:pointer;border-radius:2px;transition:all .2s;text-transform:uppercase;display:flex;align-items:center;gap:.3rem;}
+.btn-emu{padding:.35rem .75rem;border:1px solid var(--border);background:transparent;
+  color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.1em;
+  cursor:pointer;border-radius:2px;transition:all .2s;text-transform:uppercase;
+  display:flex;align-items:center;gap:.3rem;}
 .btn-emu:hover{border-color:var(--accent2);color:var(--accent2);}
 .btn-emu.danger:hover{border-color:var(--danger);color:var(--danger);}
 .btn-emu.active{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,.12);}
 
-/* GAME WRAPPER */
-#game-wrapper{position:relative;background:#000;border:2px solid var(--border);border-radius:4px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.8),0 0 60px rgba(124,58,237,.1);}
-#game{width:100%;}
+/* ── GAME WRAPPER ── */
+#game-wrapper{
+  position:relative;
+  background:#000;
+  border:2px solid var(--border);
+  border-radius:4px;
+  overflow:hidden;
+  box-shadow:0 0 40px rgba(0,0,0,.8),0 0 60px rgba(124,58,237,.1);
+  /* min-height so touch controls are visible even before game loads */
+  min-height:300px;
+}
+#game{width:100%;display:block;}
 
-/* TOUCH OVERLAY */
-#touch-overlay{display:none;position:absolute;inset:0;z-index:100;}
+/*
+  ═══════════════════════════════════════════════════
+  TOUCH OVERLAY — KEY FIX:
+  pointer-events:none on the container so the game
+  canvas under it can still receive focus/clicks.
+  Each .t-btn sets its own pointer-events:auto.
+  ═══════════════════════════════════════════════════
+*/
+#touch-overlay{
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:50;
+  pointer-events:none; /* ← CRITICAL BUG FIX */
+}
 #touch-overlay.visible{display:block;}
 
-/* Generic touch button */
+/* ── TOUCH BUTTONS ── */
 .t-btn{
   position:absolute;
   display:flex;align-items:center;justify-content:center;
-  user-select:none;-webkit-user-select:none;touch-action:none;
-  background:rgba(0,0,0,.5);
-  backdrop-filter:blur(3px);
-  border:2px solid rgba(255,255,255,.2);
-  color:rgba(255,255,255,.85);
+  pointer-events:auto;          /* each button catches its own events */
+  touch-action:none;            /* prevent scroll while pressing buttons */
+  -webkit-touch-callout:none;
+  user-select:none;
+  -webkit-user-select:none;
+  background:rgba(0,0,0,.52);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+  border:2.5px solid rgba(255,255,255,.22);
+  color:rgba(255,255,255,.88);
   font-family:'Orbitron',sans-serif;
   font-weight:900;
-  cursor:pointer;
   border-radius:50%;
-  transition:background .08s,transform .08s;
+  cursor:pointer;
   -webkit-tap-highlight-color:transparent;
-  font-size:.75rem;
+  font-size:.78rem;
+  transition:background .07s,transform .07s,border-color .07s;
 }
-.t-btn:active,.t-btn.pressed{background:rgba(124,58,237,.6);border-color:rgba(168,85,247,.9);transform:scale(.9);}
+.t-btn.pressed{
+  background:rgba(124,58,237,.65) !important;
+  border-color:rgba(168,85,247,.95) !important;
+  transform:scale(.88) !important;
+}
 
-/* D-pad buttons */
-#tb-up   {width:44px;height:44px;top:8px; left:50%;margin-left:-22px;}
-#tb-down {width:44px;height:44px;bottom:8px;left:50%;margin-left:-22px;}
-#tb-left {width:44px;height:44px;top:50%;margin-top:-22px;left:8px;}
-#tb-right{width:44px;height:44px;top:50%;margin-top:-22px;right:8px;}
+/* ── D-PAD zone — bottom-left ── */
+/* FIX: position:relative so child absolute buttons position against this */
+#dpad-zone{
+  position:absolute;
+  bottom:55px; left:10px;
+  width:136px; height:136px;
+  pointer-events:none; /* container transparent, buttons handle own events */
+}
+/* D-pad cross buttons positioned inside dpad-zone */
+#tb-up   {width:42px;height:42px;top:0;   left:50%;transform:translateX(-50%);}
+#tb-down {width:42px;height:42px;bottom:0;left:50%;transform:translateX(-50%);}
+#tb-left {width:42px;height:42px;left:0;  top:50%; transform:translateY(-50%);}
+#tb-right{width:42px;height:42px;right:0; top:50%; transform:translateY(-50%);}
+/* Center nub */
+#dpad-center{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);
+  pointer-events:none;
+}
+/* pressed states with directional color */
+#tb-up.pressed,#tb-down.pressed,#tb-left.pressed,#tb-right.pressed{
+  background:rgba(6,182,212,.5) !important;
+  border-color:rgba(6,182,212,.9) !important;
+}
 
-/* D-pad container (bottom-left) */
-#dpad-zone{position:absolute;bottom:60px;left:12px;width:130px;height:130px;}
+/* ── FACE BUTTONS zone — bottom-right ── */
+#face-zone{
+  position:absolute;
+  bottom:55px; right:10px;
+  width:126px; height:126px;
+  pointer-events:none;
+}
+/* Diamond layout: A=right, B=bottom */
+#tb-a{
+  width:52px;height:52px;
+  right:0;top:50%;transform:translateY(-50%);
+  border-color:rgba(239,68,68,.7);color:#fc8181;
+}
+#tb-a.pressed{background:rgba(220,38,38,.6) !important;border-color:#f87171 !important;}
+#tb-b{
+  width:52px;height:52px;
+  bottom:0;left:50%;transform:translateX(-50%);
+  border-color:rgba(234,179,8,.65);color:#fbbf24;
+}
+#tb-b.pressed{background:rgba(180,130,0,.6) !important;border-color:#fcd34d !important;}
 
-/* Face buttons (bottom-right) */
-#face-zone{position:absolute;bottom:60px;right:12px;width:120px;height:120px;}
-#tb-a{width:52px;height:52px;right:0;top:50%;margin-top:-26px;border-color:rgba(220,50,50,.65);color:#ff7070;}
-#tb-a:active,#tb-a.pressed{background:rgba(200,40,40,.6);border-color:#ff6060;}
-#tb-b{width:52px;height:52px;bottom:0;left:50%;margin-left:-26px;border-color:rgba(255,185,0,.55);color:#fbbf24;}
-#tb-b:active,#tb-b.pressed{background:rgba(200,145,0,.6);border-color:#ffcc30;}
+/* ── L / R TRIGGERS — top corners ── */
+#tb-l{
+  width:68px;height:30px;border-radius:14px;
+  top:8px;left:8px;font-size:.52rem;letter-spacing:.12em;
+  border-color:rgba(255,255,255,.2);
+}
+#tb-r{
+  width:68px;height:30px;border-radius:14px;
+  top:8px;right:8px;font-size:.52rem;letter-spacing:.12em;
+  border-color:rgba(255,255,255,.2);
+}
 
-/* L / R triggers (top corners) */
-#tb-l{width:64px;height:28px;border-radius:14px;top:8px;left:10px;font-size:.55rem;letter-spacing:.1em;}
-#tb-r{width:64px;height:28px;border-radius:14px;top:8px;right:10px;font-size:.55rem;letter-spacing:.1em;}
+/* ── START / SELECT — bottom center ── */
+#tb-select{
+  width:66px;height:24px;border-radius:12px;
+  bottom:10px;left:50%;margin-left:-76px;
+  font-size:.42rem;letter-spacing:.08em;
+}
+#tb-start{
+  width:66px;height:24px;border-radius:12px;
+  bottom:10px;left:50%;margin-left:10px;
+  font-size:.42rem;letter-spacing:.08em;
+}
 
-/* Start / Select (bottom center) */
-#tb-select{width:62px;height:22px;border-radius:11px;bottom:10px;left:50%;margin-left:-72px;font-size:.42rem;letter-spacing:.06em;}
-#tb-start {width:62px;height:22px;border-radius:11px;bottom:10px;left:50%;margin-left:10px; font-size:.42rem;letter-spacing:.06em;}
-
-/* SETTINGS PANEL */
+/* ── SETTINGS PANEL ── */
 #settings-panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
 #settings-panel.open{display:block;}
-.settings-header{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.settings-header{display:flex;align-items:center;justify-content:space-between;
+  padding:.8rem 1.2rem;border-bottom:1px solid var(--border);background:var(--surface);}
 .settings-header h2{font-family:'Orbitron',sans-serif;font-size:.65rem;letter-spacing:.2em;color:var(--accent2);}
 .settings-body{padding:1.2rem;display:flex;flex-direction:column;gap:1.5rem;}
 .setting-row{display:flex;flex-direction:column;gap:.6rem;}
-.setting-label{font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.25em;color:var(--muted);text-transform:uppercase;}
+.setting-label{font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.25em;
+  color:var(--muted);text-transform:uppercase;}
 .speed-btns{display:flex;gap:.4rem;flex-wrap:wrap;}
-.speed-btn{padding:.4rem .8rem;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;transition:all .2s;letter-spacing:.05em;}
+.speed-btn{padding:.4rem .8rem;border:1px solid var(--border);background:transparent;
+  color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.58rem;cursor:pointer;
+  border-radius:2px;transition:all .2s;letter-spacing:.05em;}
 .speed-btn:hover{border-color:var(--accent2);color:var(--accent2);}
-.speed-btn.active{border-color:var(--accent3);color:var(--accent3);background:rgba(245,158,11,.1);box-shadow:0 0 10px rgba(245,158,11,.2);}
-.toggle-row{display:flex;gap:.4rem;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:3px;}
-.toggle-opt{flex:1;padding:.5rem .8rem;border:none;background:transparent;color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;transition:all .2s;letter-spacing:.08em;text-align:center;}
+.speed-btn.active{border-color:var(--accent3);color:var(--accent3);
+  background:rgba(245,158,11,.1);box-shadow:0 0 10px rgba(245,158,11,.2);}
+.toggle-row{display:flex;gap:.4rem;background:var(--surface);
+  border:1px solid var(--border);border-radius:3px;padding:3px;}
+.toggle-opt{flex:1;padding:.5rem .8rem;border:none;background:transparent;
+  color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.58rem;cursor:pointer;
+  border-radius:2px;transition:all .2s;letter-spacing:.08em;text-align:center;}
 .toggle-opt.active{background:var(--accent);color:#fff;box-shadow:var(--glow);}
 .setting-note{font-size:.55rem;color:var(--muted);line-height:1.6;}
 
-/* STATUS BAR */
+/* ── STATUS BAR ── */
 .emu-status{display:flex;gap:1rem;flex-wrap:wrap;font-size:.55rem;color:var(--muted);padding:.3rem .1rem;}
 .emu-status span{display:flex;align-items:center;gap:.3rem;}
-.dot{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e;animation:pulse 2s infinite;}
+.dot{width:6px;height:6px;border-radius:50%;background:#22c55e;
+  box-shadow:0 0 6px #22c55e;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.speed-tag{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);border-radius:2px;padding:.1rem .35rem;color:var(--accent3);font-family:'Orbitron',sans-serif;font-size:.5rem;}
+.speed-tag{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);
+  border-radius:2px;padding:.1rem .35rem;color:var(--accent3);
+  font-family:'Orbitron',sans-serif;font-size:.5rem;}
 
-/* LOADING */
-#loading-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,18,.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
+/* ── LOADING OVERLAY ── */
+#loading-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,18,.92);
+  z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
 #loading-overlay.show{display:flex;}
-.loading-text{font-family:'Press Start 2P',monospace;font-size:.65rem;color:var(--accent2);animation:blink 1s infinite;}
+.loading-text{font-family:'Press Start 2P',monospace;font-size:.65rem;color:var(--accent2);
+  animation:blink 1s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .loading-bar{width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
-.loading-bar-inner{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));animation:lbar 1.5s ease-in-out infinite;border-radius:2px;}
+.loading-bar-inner{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  animation:lbar 1.5s ease-in-out infinite;border-radius:2px;}
 @keyframes lbar{0%{width:0%;margin-left:0%}50%{width:70%;margin-left:15%}100%{width:0%;margin-left:100%}}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .35s ease forwards;}
 
 @media(max-width:480px){
   .emu-topbar{padding:.5rem .7rem;}
-  .game-title-display{font-size:.58rem;}
-  #dpad-zone{bottom:50px;left:6px;width:120px;height:120px;}
-  #face-zone{bottom:50px;right:6px;width:110px;height:110px;}
+  .game-title-display{font-size:.55rem;}
+  #dpad-zone{bottom:48px;left:6px;width:124px;height:124px;}
+  #face-zone{bottom:48px;right:6px;width:116px;height:116px;}
+  #tb-a,#tb-b{width:46px;height:46px;}
+  #tb-select,#tb-start{width:58px;height:22px;}
 }
 </style>
 </head>
 <body>
 
+<!-- Loading overlay -->
 <div id="loading-overlay">
   <div class="loading-text">LOADING GAME...</div>
   <div class="loading-bar"><div class="loading-bar-inner"></div></div>
@@ -183,7 +325,7 @@ input[type="file"]{display:none;}
 
 <main>
 
-<!-- ════════════════════════ UPLOAD PAGE ════════════════════════ -->
+<!-- ════════════════ UPLOAD PAGE ════════════════ -->
 <div id="upload-section" class="fade-in">
 
   <div class="section-label">01 // Load ROM File</div>
@@ -207,8 +349,8 @@ input[type="file"]{display:none;}
       <div class="file-icon">💾</div>
       <div class="file-meta">
         <h3>SAVE FILE</h3>
-        <p>Supported: .sav · .srm — Continue your existing save</p>
-        <div class="file-status" id="sav-status">[ OPTIONAL — SKIP IF NEW GAME ]</div>
+        <p>Supported: .sav · .srm — Continue existing save data</p>
+        <div class="file-status" id="sav-status">[ OPTIONAL — SKIP FOR NEW GAME ]</div>
       </div>
       <button class="btn-upload secondary" onclick="document.getElementById('sav-input').click()">SELECT SAV</button>
     </div>
@@ -216,7 +358,7 @@ input[type="file"]{display:none;}
     <input type="file" id="sav-input" accept=".sav,.srm,.sa1,.sa2">
   </div>
 
-  <div class="section-label">03 // Keyboard Reference</div>
+  <div class="section-label">03 // Keyboard Controls</div>
   <div class="upload-card">
     <div class="controls-grid">
       <div class="ctrl-item"><span class="key-badge">← → ↑ ↓</span><span class="ctrl-desc">D-Pad</span></div>
@@ -229,18 +371,18 @@ input[type="file"]{display:none;}
       <div class="ctrl-item"><span class="key-badge">F1</span><span class="ctrl-desc">Save State</span></div>
       <div class="ctrl-item"><span class="key-badge">F3</span><span class="ctrl-desc">Load State</span></div>
     </div>
-    <p style="font-size:.58rem;color:var(--muted);margin-top:.8rem;">🎮 Physical gamepad also supported automatically when connected.</p>
+    <p style="font-size:.58rem;color:var(--muted);margin-top:.8rem;">🎮 Physical gamepad/controller also supported automatically.</p>
   </div>
 
   <div class="notice">
-    <strong>⚠ LEGAL NOTICE:</strong> This emulator does not distribute ROMs. Only use games you legally own.
-    Save data is stored locally in your browser.
+    <strong>⚠ LEGAL NOTICE:</strong> This emulator does not distribute ROMs.
+    Only play games you legally own. Save data is stored locally in your browser.
   </div>
 
   <button id="launch-btn" onclick="launchEmulator()">▶ &nbsp;LAUNCH GAME</button>
 </div>
 
-<!-- ════════════════════════ EMULATOR PAGE ════════════════════════ -->
+<!-- ════════════════ EMULATOR PAGE ════════════════ -->
 <div id="emulator-section">
 
   <!-- Top bar -->
@@ -260,18 +402,18 @@ input[type="file"]{display:none;}
     </div>
     <div class="settings-body">
 
-      <!-- Speed control -->
+      <!-- Speed -->
       <div class="setting-row">
         <div class="setting-label">🚀 &nbsp;Game Speed</div>
         <div class="speed-btns">
-          <button class="speed-btn" data-speed="0.5" onclick="setSpeed(0.5)">0.5×</button>
-          <button class="speed-btn active" data-speed="1"   onclick="setSpeed(1)">1× Normal</button>
+          <button class="speed-btn" data-speed="0.5" onclick="setSpeed(0.5)">0.5×  Slow</button>
+          <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1×  Normal</button>
           <button class="speed-btn" data-speed="1.5" onclick="setSpeed(1.5)">1.5×</button>
-          <button class="speed-btn" data-speed="2"   onclick="setSpeed(2)">2× Fast</button>
-          <button class="speed-btn" data-speed="3"   onclick="setSpeed(3)">3× Turbo</button>
-          <button class="speed-btn" data-speed="4"   onclick="setSpeed(4)">4× Ultra</button>
+          <button class="speed-btn" data-speed="2"   onclick="setSpeed(2)">2×  Fast</button>
+          <button class="speed-btn" data-speed="3"   onclick="setSpeed(3)">3×  Turbo</button>
+          <button class="speed-btn" data-speed="4"   onclick="setSpeed(4)">4×  Ultra</button>
         </div>
-        <div class="setting-note">Changes how fast the game runs. Higher values = faster gameplay and audio.</div>
+        <div class="setting-note">Adjusts how fast the game runs. Higher = faster gameplay and audio.</div>
       </div>
 
       <!-- Control mode -->
@@ -282,21 +424,25 @@ input[type="file"]{display:none;}
           <button class="toggle-opt active" id="opt-touch" onclick="setControlMode('touch')">👆 &nbsp;TOUCH</button>
         </div>
         <div class="setting-note" id="ctrl-note">
-          Touch mode: On-screen D-Pad, A, B, L, R, Start, Select are shown over the game screen.
+          Touch mode: D-Pad + A/B/L/R/Start/Select shown over the game screen.
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- Game screen + touch controls -->
+  <!-- Game screen + touch overlay -->
   <div id="game-wrapper">
     <div id="game"></div>
 
-    <!-- All touch buttons absolutely positioned over the game -->
+    <!--
+      TOUCH OVERLAY
+      Container has pointer-events:none so the game beneath stays interactive.
+      Each .t-btn has pointer-events:auto to catch its own touch/mouse events.
+    -->
     <div id="touch-overlay" class="visible">
 
-      <!-- L / R Triggers (top corners) -->
+      <!-- L / R triggers -->
       <button class="t-btn" id="tb-l">L</button>
       <button class="t-btn" id="tb-r">R</button>
 
@@ -306,6 +452,7 @@ input[type="file"]{display:none;}
         <button class="t-btn" id="tb-down">▼</button>
         <button class="t-btn" id="tb-left">◀</button>
         <button class="t-btn" id="tb-right">▶</button>
+        <div id="dpad-center"></div>
       </div>
 
       <!-- Face buttons zone -->
@@ -314,7 +461,7 @@ input[type="file"]{display:none;}
         <button class="t-btn" id="tb-b">B</button>
       </div>
 
-      <!-- Start / Select (bottom center) -->
+      <!-- Start / Select -->
       <button class="t-btn" id="tb-select">SELECT</button>
       <button class="t-btn" id="tb-start">START</button>
 
@@ -329,19 +476,27 @@ input[type="file"]{display:none;}
     <span id="ctrl-mode-tag">👆 Touch Controls</span>
   </div>
 
-</div>
+</div><!-- /emulator-section -->
 </main>
 
 <script>
-/* ═══════════════ STATE ═══════════════ */
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
 let romFile = null, savFile = null, romBlobUrl = null;
 let currentSpeed = 1;
-let controlMode = 'touch';
+let controlMode  = 'touch';
 let settingsOpen = false;
 
-/* ═══════════════ FILE HANDLING ═══════════════ */
-document.getElementById('rom-input').addEventListener('change', e => { if(e.target.files[0]) handleRom(e.target.files[0]); });
-document.getElementById('sav-input').addEventListener('change', e => { if(e.target.files[0]) handleSav(e.target.files[0]); });
+/* ══════════════════════════════════════════════════════════
+   FILE HANDLING
+══════════════════════════════════════════════════════════ */
+document.getElementById('rom-input').addEventListener('change', e => {
+  if (e.target.files[0]) handleRom(e.target.files[0]);
+});
+document.getElementById('sav-input').addEventListener('change', e => {
+  if (e.target.files[0]) handleSav(e.target.files[0]);
+});
 
 function handleRom(f) {
   romFile = f;
@@ -367,16 +522,22 @@ function checkLaunch() {
 /* drag & drop */
 function setupDrop(zId, hId, fn) {
   const z = document.getElementById(zId), h = document.getElementById(hId);
-  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('active-drop'); h.classList.add('dragging'); });
-  z.addEventListener('dragleave', () => { z.classList.remove('active-drop'); h.classList.remove('dragging'); });
-  z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('active-drop'); h.classList.remove('dragging'); if(e.dataTransfer.files[0]) fn(e.dataTransfer.files[0]); });
+  z.addEventListener('dragover',  e => { e.preventDefault(); z.classList.add('active-drop'); h.classList.add('dragging'); });
+  z.addEventListener('dragleave', ()  => { z.classList.remove('active-drop'); h.classList.remove('dragging'); });
+  z.addEventListener('drop',      e  => {
+    e.preventDefault();
+    z.classList.remove('active-drop'); h.classList.remove('dragging');
+    if (e.dataTransfer.files[0]) fn(e.dataTransfer.files[0]);
+  });
 }
 setupDrop('rom-drop-zone','rom-drop-hint', handleRom);
 setupDrop('sav-drop-zone','sav-drop-hint', handleSav);
 document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => e.preventDefault());
+document.addEventListener('drop',     e => e.preventDefault());
 
-/* ═══════════════ LAUNCH ═══════════════ */
+/* ══════════════════════════════════════════════════════════
+   LAUNCH EMULATOR
+══════════════════════════════════════════════════════════ */
 async function launchEmulator() {
   if (!romFile) return;
   document.getElementById('loading-overlay').classList.add('show');
@@ -390,59 +551,84 @@ async function launchEmulator() {
   document.getElementById('game').innerHTML = '';
   applyControlMode(controlMode);
 
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise(r => setTimeout(r, 400));
 
-  window.EJS_player        = '#game';
-  window.EJS_gameUrl       = romBlobUrl;
-  window.EJS_core          = 'gba';
-  window.EJS_pathtodata    = 'https://cdn.emulatorjs.org/stable/data/';
-  window.EJS_startOnLoaded = true;
-  window.EJS_color         = '#7c3aed';
+  window.EJS_player          = '#game';
+  window.EJS_gameUrl         = romBlobUrl;
+  window.EJS_core            = 'gba';
+  window.EJS_pathtodata      = 'https://cdn.emulatorjs.org/stable/data/';
+  window.EJS_startOnLoaded   = true;
+  window.EJS_color           = '#7c3aed';
   window.EJS_backgroundColor = '#000000';
-  window.EJS_VirtualGamepad  = false;
+  window.EJS_VirtualGamepad  = false;  // we handle our own touch controls
 
   if (savFile) {
-    savFile.arrayBuffer().then(buf => { window._savData = new Uint8Array(buf); window._savName = savFile.name; });
+    savFile.arrayBuffer().then(buf => {
+      window._savData = new Uint8Array(buf);
+      window._savName = savFile.name;
+    });
   }
 
   const old = document.getElementById('ejs-loader');
   if (old) old.remove();
-  const s = document.createElement('script');
-  s.id  = 'ejs-loader';
-  s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-  s.onload = () => {
+  const scr = document.createElement('script');
+  scr.id  = 'ejs-loader';
+  scr.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+  scr.onload = () => {
     document.getElementById('loading-overlay').classList.remove('show');
-    setTimeout(() => trySetSpeed(currentSpeed), 3500);
+    // Apply speed after emulator has had time to initialize
+    setTimeout(() => applySpeed(currentSpeed), 4000);
   };
-  s.onerror = () => {
+  scr.onerror = () => {
     document.getElementById('loading-overlay').classList.remove('show');
     document.getElementById('game').innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:1rem;padding:2rem;text-align:center;">' +
-      '<div style="font-family:\'Press Start 2P\',monospace;font-size:.7rem;color:#ef4444;">CDN ERROR</div>' +
-      '<div style="font-size:.62rem;color:#64748b;line-height:1.8;">Could not reach EmulatorJS CDN.<br>Check your internet connection.</div>' +
-      '<button onclick="resetEmulator()" style="padding:.5rem 1rem;border:1px solid #7c3aed;background:transparent;color:#7c3aed;font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;">← BACK</button>' +
+      '<div style="display:flex;align-items:center;justify-content:center;' +
+      'height:280px;flex-direction:column;gap:1rem;padding:2rem;text-align:center;">' +
+      '<div style="font-family:\'Press Start 2P\',monospace;font-size:.7rem;color:#ef4444;">CDN LOAD ERROR</div>' +
+      '<div style="font-size:.62rem;color:#64748b;line-height:1.9;">Failed to load EmulatorJS from CDN.<br>' +
+      'Please check your internet connection.<br><br>' +
+      '<span style="color:#06b6d4">cdn.emulatorjs.org</span> must be reachable.</div>' +
+      '<button onclick="resetEmulator()" style="margin-top:.5rem;padding:.5rem 1.2rem;' +
+      'border:1px solid #7c3aed;background:transparent;color:#7c3aed;' +
+      'font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;">← BACK</button>' +
       '</div>';
   };
-  document.body.appendChild(s);
+  document.body.appendChild(scr);
 }
 
-/* ═══════════════ RESET ═══════════════ */
+/* ══════════════════════════════════════════════════════════
+   RESET
+══════════════════════════════════════════════════════════ */
 function resetEmulator() {
   const old = document.getElementById('ejs-loader');
   if (old) old.remove();
   if (romBlobUrl) { URL.revokeObjectURL(romBlobUrl); romBlobUrl = null; }
-  Object.keys(window).filter(k => k.startsWith('EJS_')).forEach(k => { try { delete window[k]; } catch(e){} });
+  // Remove all EJS globals
+  Object.keys(window).filter(k => k.startsWith('EJS_')).forEach(k => {
+    try { delete window[k]; } catch(e) {}
+  });
   document.getElementById('game').innerHTML = '';
   document.getElementById('emulator-section').style.display = 'none';
   document.getElementById('upload-section').style.display = 'flex';
   document.getElementById('loading-overlay').classList.remove('show');
-  if (settingsOpen) { settingsOpen = false; document.getElementById('settings-panel').classList.remove('open'); document.getElementById('btn-settings').classList.remove('active'); }
+  if (settingsOpen) {
+    settingsOpen = false;
+    document.getElementById('settings-panel').classList.remove('open');
+    document.getElementById('btn-settings').classList.remove('active');
+  }
+  // Reset speed UI
   currentSpeed = 1;
-  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', b.dataset.speed === '1'));
-  document.getElementById('speed-tag').textContent = '1x';
+  document.querySelectorAll('.speed-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.speed === '1')
+  );
+  document.getElementById('speed-tag').textContent = '1×';
+  // Release all pressed buttons
+  Object.keys(KEY_MAP).forEach(id => releaseBtn(id));
 }
 
-/* ═══════════════ SETTINGS ═══════════════ */
+/* ══════════════════════════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════════════════════════ */
 function toggleSettings() {
   settingsOpen = !settingsOpen;
   document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
@@ -452,22 +638,26 @@ function toggleSettings() {
 /* ── SPEED ── */
 function setSpeed(val) {
   currentSpeed = val;
-  document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.speed) === val));
-  document.getElementById('speed-tag').textContent = val + 'x';
-  trySetSpeed(val);
+  document.querySelectorAll('.speed-btn').forEach(b =>
+    b.classList.toggle('active', parseFloat(b.dataset.speed) === val)
+  );
+  document.getElementById('speed-tag').textContent = val + '×';
+  applySpeed(val);
 }
 
-function trySetSpeed(val) {
+function applySpeed(val) {
   try {
     const emu = window.EJS_emulator;
     if (!emu) return;
-    if (typeof emu.setSpeed === 'function') { emu.setSpeed(val); return; }
-    if (emu.gameManager && typeof emu.gameManager.setSpeed === 'function') { emu.gameManager.setSpeed(val); return; }
-    // Fallback: try Module FS path
-    if (emu.Module && emu.Module._emscripten_set_main_loop_timing) {
-      // Not a clean API — skip silently
+    // EmulatorJS exposes setSpeed on the emulator object
+    if (typeof emu.setSpeed === 'function') {
+      emu.setSpeed(val);
+    } else if (emu.gameManager && typeof emu.gameManager.setSpeed === 'function') {
+      emu.gameManager.setSpeed(val);
     }
-  } catch(e) { console.warn('Speed API:', e); }
+  } catch(e) {
+    console.warn('[GBA] Speed API unavailable:', e);
+  }
 }
 
 /* ── CONTROL MODE ── */
@@ -484,54 +674,179 @@ function applyControlMode(mode) {
   const mTag    = document.getElementById('ctrl-mode-tag');
   if (mode === 'touch') {
     overlay.classList.add('visible');
-    kbOpt.classList.remove('active'); tOpt.classList.add('active');
-    note.textContent = 'Touch mode: On-screen D-Pad, A, B, L, R, Start, Select shown over the game.';
+    kbOpt.classList.remove('active');
+    tOpt.classList.add('active');
+    note.textContent = 'Touch mode: D-Pad, A, B, L, R, Start, Select displayed over the game.';
     mTag.textContent = '👆 Touch Controls';
   } else {
     overlay.classList.remove('visible');
-    kbOpt.classList.add('active'); tOpt.classList.remove('active');
-    note.textContent = 'Keyboard mode: Use arrow keys + Z/X/Enter/Shift. No on-screen buttons.';
+    kbOpt.classList.add('active');
+    tOpt.classList.remove('active');
+    note.textContent = 'Keyboard mode: Arrow keys + Z/X/Enter/Shift/A/S. No on-screen buttons.';
     mTag.textContent = '⌨ Keyboard';
+    // release any stuck buttons
+    Object.keys(KEY_MAP).forEach(id => releaseBtn(id));
   }
 }
 
-/* ═══════════════ TOUCH BUTTON INPUT ═══════════════ */
-/*
-  libretro / EmulatorJS GBA button IDs:
-  B=0  Y=1  Select=2  Start=3  Up=4  Down=5  Left=6  Right=7  A=8  X=9  L=10  R=11
-*/
-const BTN_IDS = {
-  'tb-up':4, 'tb-down':5, 'tb-left':6, 'tb-right':7,
-  'tb-a':8,  'tb-b':0,    'tb-l':10,   'tb-r':11,
-  'tb-start':3, 'tb-select':2
+/* ══════════════════════════════════════════════════════════
+   TOUCH / MOUSE → KEYBOARD EVENT SIMULATION
+   ─────────────────────────────────────────────────────────
+   EmulatorJS listens to keyboard events on document/window.
+   The most reliable way to control the emulator from touch
+   buttons is to dispatch real KeyboardEvents — exactly what
+   EmulatorJS is already listening for.
+
+   Default EmulatorJS GBA key mapping:
+     Arrow keys  → D-Pad
+     Z           → A button
+     X           → B button
+     Enter       → Start
+     ShiftLeft   → Select
+     a / A       → L trigger
+     s / S       → R trigger
+══════════════════════════════════════════════════════════ */
+const KEY_MAP = {
+  'tb-up':     { key:'ArrowUp',    code:'ArrowUp',    keyCode:38 },
+  'tb-down':   { key:'ArrowDown',  code:'ArrowDown',  keyCode:40 },
+  'tb-left':   { key:'ArrowLeft',  code:'ArrowLeft',  keyCode:37 },
+  'tb-right':  { key:'ArrowRight', code:'ArrowRight', keyCode:39 },
+  'tb-a':      { key:'z',          code:'KeyZ',       keyCode:90 },
+  'tb-b':      { key:'x',          code:'KeyX',       keyCode:88 },
+  'tb-l':      { key:'a',          code:'KeyA',       keyCode:65 },
+  'tb-r':      { key:'s',          code:'KeyS',       keyCode:83 },
+  'tb-start':  { key:'Enter',      code:'Enter',      keyCode:13 },
+  'tb-select': { key:'Shift',      code:'ShiftLeft',  keyCode:16 },
 };
 
-function pressBtn(id) {
+// Track which buttons are currently held (prevents key-repeat spam)
+const heldKeys = new Set();
+
+function fireKey(type, keyInfo) {
+  // Dispatch on both window and document to maximise compatibility
+  const opts = {
+    key:      keyInfo.key,
+    code:     keyInfo.code,
+    keyCode:  keyInfo.keyCode,
+    which:    keyInfo.keyCode,
+    bubbles:  true,
+    cancelable: true,
+  };
   try {
-    const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
-    if (gm && gm.buttonDown) gm.buttonDown(BTN_IDS[id], 0);
+    window.dispatchEvent(new KeyboardEvent(type, opts));
+    document.dispatchEvent(new KeyboardEvent(type, opts));
+    // Also try dispatching on the game canvas / EmulatorJS container
+    const canvas = document.querySelector('#game canvas');
+    if (canvas) canvas.dispatchEvent(new KeyboardEvent(type, opts));
   } catch(e) {}
-  const el = document.getElementById(id);
-  if (el) el.classList.add('pressed');
-}
-function releaseBtn(id) {
-  try {
-    const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
-    if (gm && gm.buttonUp) gm.buttonUp(BTN_IDS[id], 0);
-  } catch(e) {}
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('pressed');
 }
 
-Object.keys(BTN_IDS).forEach(id => {
+function pressBtn(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('pressed');
+
+  const k = KEY_MAP[id];
+  if (!k) return;
+  if (!heldKeys.has(id)) {
+    heldKeys.add(id);
+    fireKey('keydown', k);
+  }
+}
+
+function releaseBtn(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('pressed');
+
+  const k = KEY_MAP[id];
+  if (!k) return;
+  if (heldKeys.has(id)) {
+    heldKeys.delete(id);
+    fireKey('keyup', k);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MULTI-TOUCH HANDLER
+   ─────────────────────────────────────────────────────────
+   We track each touch point by identifier so pressing the
+   D-Pad + A + B simultaneously all work independently.
+══════════════════════════════════════════════════════════ */
+
+// Map: touchIdentifier → buttonId
+const touchMap = new Map();
+
+function getBtnFromTouch(touch) {
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!el) return null;
+  const btn = el.closest('.t-btn');
+  return btn ? btn.id : null;
+}
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  for (const touch of e.changedTouches) {
+    const id = getBtnFromTouch(touch);
+    if (id) {
+      touchMap.set(touch.identifier, id);
+      pressBtn(id);
+    }
+  }
+}
+
+function handleTouchEnd(e) {
+  e.preventDefault();
+  for (const touch of e.changedTouches) {
+    const id = touchMap.get(touch.identifier);
+    if (id) {
+      touchMap.delete(touch.identifier);
+      // Only release if no other touch is holding the same button
+      const stillHeld = [...touchMap.values()].includes(id);
+      if (!stillHeld) releaseBtn(id);
+    }
+  }
+}
+
+function handleTouchMove(e) {
+  e.preventDefault();
+  for (const touch of e.changedTouches) {
+    const prevId = touchMap.get(touch.identifier);
+    const newId  = getBtnFromTouch(touch);
+    if (prevId !== newId) {
+      // Finger slid off old button
+      if (prevId) {
+        touchMap.delete(touch.identifier);
+        const stillHeld = [...touchMap.values()].includes(prevId);
+        if (!stillHeld) releaseBtn(prevId);
+      }
+      // Finger slid onto new button
+      if (newId) {
+        touchMap.set(touch.identifier, newId);
+        pressBtn(newId);
+      }
+    }
+  }
+}
+
+// Attach multi-touch listeners to the overlay itself
+const overlay = document.getElementById('touch-overlay');
+overlay.addEventListener('touchstart',  handleTouchStart, { passive: false });
+overlay.addEventListener('touchend',    handleTouchEnd,   { passive: false });
+overlay.addEventListener('touchcancel', handleTouchEnd,   { passive: false });
+overlay.addEventListener('touchmove',   handleTouchMove,  { passive: false });
+
+// Mouse fallback for desktop testing
+Object.keys(KEY_MAP).forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
-  el.addEventListener('touchstart',  e => { e.preventDefault(); pressBtn(id);   }, { passive:false });
-  el.addEventListener('touchend',    e => { e.preventDefault(); releaseBtn(id); }, { passive:false });
-  el.addEventListener('touchcancel', e => { e.preventDefault(); releaseBtn(id); }, { passive:false });
-  el.addEventListener('mousedown',   e => { e.preventDefault(); pressBtn(id);   });
-  el.addEventListener('mouseup',     e => { e.preventDefault(); releaseBtn(id); });
-  el.addEventListener('mouseleave',  () => releaseBtn(id));
+  el.addEventListener('mousedown',  e => { e.preventDefault(); pressBtn(id); });
+  el.addEventListener('mouseup',    e => { e.preventDefault(); releaseBtn(id); });
+  el.addEventListener('mouseleave', ()  => releaseBtn(id));
+});
+
+// Safety: release all keys on window blur (prevents stuck keys)
+window.addEventListener('blur',       () => Object.keys(KEY_MAP).forEach(id => releaseBtn(id)));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) Object.keys(KEY_MAP).forEach(id => releaseBtn(id));
 });
 </script>
 </body>
