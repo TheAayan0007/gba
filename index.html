@@ -291,7 +291,7 @@ main{position:relative;z-index:10;max-width:900px;margin:0 auto;padding:1.8rem 1
 <header>
   <div class="logo">GBA WEB PLAYER</div>
   <div class="subtitle">Game Boy Advance · Browser Emulator</div>
-  <div class="header-badge">▶ POWERED BY EMULATORJS</div>
+  <div class="header-badge">▶ POWERED BY Aayan</div>
 </header>
 
 <main>
@@ -605,10 +605,10 @@ async function launchEmulator() {
   script.onerror = function() {
     setLoading(false);
     document.getElementById('game').innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:1rem;padding:2rem;text-align:center;">' +
-      '<div style="font-family:'Press Start 2P',monospace;font-size:.7rem;color:#ef4444;">CDN ERROR</div>' +
-      '<div style="font-size:.62rem;color:#64748b;line-height:1.9;">Could not reach EmulatorJS CDN.<br>Check your connection.<br><br><span style="color:#06b6d4">cdn.emulatorjs.org</span></div>' +
-      '<button onclick="resetEmulator()" style="margin-top:.5rem;padding:.5rem 1.2rem;border:1px solid #7c3aed;background:transparent;color:#7c3aed;font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;">← BACK</button></div>';
+      "<div style='display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:1rem;padding:2rem;text-align:center;'>" +
+      "<div style='font-family:\"Press Start 2P\",monospace;font-size:.7rem;color:#ef4444;'>CDN ERROR</div>" +
+      "<div style='font-size:.62rem;color:#64748b;line-height:1.9;'>Could not reach EmulatorJS CDN.<br>Check your connection.</div>" +
+      "<button onclick='resetEmulator()' style='margin-top:.5rem;padding:.5rem 1.2rem;border:1px solid #7c3aed;background:transparent;color:#7c3aed;font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;'>← BACK</button></div>";
   };
   document.body.appendChild(script);
 }
