@@ -8,8 +8,7 @@
 <style>
 :root{
   --bg:#0a0a12;--surface:#12121e;--card:#1a1a2e;--border:#2a2a4a;
-  --accent:#7c3aed;--accent2:#06b6d4;--accent3:#f59e0b;
-  --green:#22c55e;
+  --accent:#7c3aed;--accent2:#06b6d4;--accent3:#f59e0b;--green:#22c55e;
   --glow:0 0 20px #7c3aed88,0 0 40px #7c3aed44;
   --glow2:0 0 20px #06b6d488,0 0 40px #06b6d444;
   --text:#e2e8f0;--muted:#64748b;--danger:#ef4444;
@@ -20,9 +19,7 @@ body{
   background:var(--bg);color:var(--text);
   font-family:'Share Tech Mono',monospace;
   min-height:100vh;overflow-x:hidden;
-  -webkit-touch-callout:none;
-  -webkit-user-select:none;user-select:none;
-  touch-action:manipulation;
+  /* NOTE: NO user-select:none on body — it blocks file input clicks */
 }
 body::before{content:'';position:fixed;inset:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);
@@ -32,7 +29,7 @@ body::after{content:'';position:fixed;inset:0;
   linear-gradient(90deg,rgba(124,58,237,.04) 1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;z-index:0;}
 
-/* ── HEADER ── */
+/* HEADER */
 header{position:relative;z-index:10;text-align:center;padding:2rem 1rem 1.2rem;
   border-bottom:1px solid var(--border);
   background:linear-gradient(180deg,rgba(124,58,237,.08) 0%,transparent 100%);}
@@ -45,21 +42,23 @@ header{position:relative;z-index:10;text-align:center;padding:2rem 1rem 1.2rem;
   border:1px solid var(--accent);border-radius:2px;font-size:.5rem;color:var(--accent2);
   letter-spacing:.2em;font-family:'Orbitron',sans-serif;box-shadow:var(--glow2);}
 
-/* ── MAIN ── */
+/* MAIN */
 main{position:relative;z-index:10;max-width:900px;margin:0 auto;padding:1.8rem 1rem 3rem;}
 
-/* ── UPLOAD SECTION ── */
+/* UPLOAD SECTION */
 #upload-section{display:flex;flex-direction:column;gap:1.4rem;}
 .section-label{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.3em;
   color:var(--accent2);text-transform:uppercase;margin-bottom:.3rem;
   display:flex;align-items:center;gap:.5rem;}
 .section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+
 .upload-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
-  padding:1.5rem 1.5rem 1.5rem 1.8rem;position:relative;overflow:hidden;
+  padding:1.5rem 1.5rem 1.5rem 1.8rem;position:relative;
   transition:border-color .2s,box-shadow .2s;}
 .upload-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;
-  background:linear-gradient(180deg,var(--accent),var(--accent2));}
-.upload-card.active-drop{border-color:var(--accent);box-shadow:var(--glow);}
+  background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:4px 0 0 4px;}
+.upload-card.drag-over{border-color:var(--accent);box-shadow:var(--glow);}
+
 .upload-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
 .file-icon{width:46px;height:46px;border:1px solid var(--border);border-radius:4px;
   display:flex;align-items:center;justify-content:center;font-size:1.3rem;
@@ -69,56 +68,78 @@ main{position:relative;z-index:10;max-width:900px;margin:0 auto;padding:1.8rem 1
   color:var(--text);letter-spacing:.1em;}
 .file-meta p{font-size:.6rem;color:var(--muted);margin-top:.2rem;}
 .file-status{font-size:.58rem;color:var(--muted);margin-top:.4rem;transition:color .3s;}
-.file-status.loaded{color:var(--green);}
-.file-status.error{color:var(--danger);}
-.btn-upload{padding:.5rem 1.1rem;border:1px solid var(--accent);background:transparent;
-  color:var(--accent);font-family:'Orbitron',sans-serif;font-size:.58rem;
-  letter-spacing:.12em;cursor:pointer;border-radius:2px;text-transform:uppercase;
-  transition:all .2s;white-space:nowrap;}
-.btn-upload:hover{background:var(--accent);color:#fff;box-shadow:var(--glow);}
-.btn-upload.secondary{border-color:var(--accent2);color:var(--accent2);}
-.btn-upload.secondary:hover{background:var(--accent2);color:#000;}
-input[type="file"]{display:none;}
-.drop-hint{text-align:center;padding:.7rem;border:1px dashed var(--border);border-radius:2px;
-  font-size:.58rem;color:var(--muted);margin-top:.9rem;transition:all .2s;}
-.drop-hint.dragging{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,.05);}
+.file-status.ok{color:var(--green);}
+.file-status.err{color:var(--danger);}
 
-/* Save info box — shown when a .sav is loaded */
-#sav-info-box{
-  display:none;
-  margin-top:.9rem;
-  background:rgba(34,197,94,.07);
-  border:1px solid rgba(34,197,94,.25);
-  border-radius:3px;
-  padding:.65rem .9rem;
-  font-size:.58rem;
-  color:var(--green);
-  line-height:1.7;
+/*
+  FILE INPUT FIX:
+  Using opacity:0 + position:absolute instead of display:none.
+  display:none inputs are blocked by browser security in many cases.
+  The <label> approach is the most reliable cross-browser method.
+*/
+.file-label{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:.5rem 1.1rem;
+  border:1px solid var(--accent);
+  background:transparent;
+  color:var(--accent);
+  font-family:'Orbitron',sans-serif;
+  font-size:.58rem;letter-spacing:.12em;
+  cursor:pointer;border-radius:2px;
+  text-transform:uppercase;
+  transition:all .2s;white-space:nowrap;
+  /* labels ARE clickable even with user-select:none */
+  user-select:none;
+  -webkit-user-select:none;
 }
-#sav-info-box strong{color:#4ade80;}
+.file-label:hover{background:var(--accent);color:#fff;box-shadow:var(--glow);}
+.file-label.secondary{border-color:var(--accent2);color:var(--accent2);}
+.file-label.secondary:hover{background:var(--accent2);color:#000;}
 
-.controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.45rem;}
+/* Hidden file input — opacity:0 trick works everywhere */
+.file-input{
+  position:absolute;
+  width:1px;height:1px;
+  opacity:0;overflow:hidden;
+  pointer-events:none; /* label handles the click */
+}
+
+.drop-hint{text-align:center;padding:.7rem;border:1px dashed var(--border);border-radius:2px;
+  font-size:.58rem;color:var(--muted);margin-top:.9rem;transition:all .2s;pointer-events:none;}
+.upload-card.drag-over .drop-hint{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,.05);}
+
+.sav-info{display:none;margin-top:.9rem;background:rgba(34,197,94,.07);
+  border:1px solid rgba(34,197,94,.25);border-radius:3px;
+  padding:.65rem .9rem;font-size:.58rem;color:var(--green);line-height:1.7;}
+.sav-info strong{color:#4ade80;}
+
+/* Controls reference */
+.controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:.45rem;}
 .ctrl-item{background:var(--surface);border:1px solid var(--border);border-radius:2px;
   padding:.45rem .75rem;display:flex;align-items:center;gap:.55rem;font-size:.58rem;}
 .key-badge{display:inline-flex;align-items:center;justify-content:center;min-width:26px;
   padding:.12rem .4rem;background:var(--card);border:1px solid var(--accent);border-radius:2px;
   font-family:'Orbitron',sans-serif;font-size:.5rem;color:var(--accent2);white-space:nowrap;flex-shrink:0;}
 .ctrl-desc{color:var(--muted);}
+
 .notice{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:2px;
   padding:.75rem 1rem;font-size:.58rem;color:#fbbf24;line-height:1.6;}
 .notice strong{color:var(--accent3);}
-#launch-btn{width:100%;padding:1rem;
+
+/* Launch button */
+#launch-btn{width:100%;padding:1rem;display:none;
   background:linear-gradient(135deg,var(--accent) 0%,#9333ea 100%);
   border:none;color:#fff;font-family:'Press Start 2P',monospace;font-size:.75rem;
-  letter-spacing:.1em;cursor:pointer;border-radius:3px;position:relative;overflow:hidden;
-  transition:all .2s;box-shadow:0 4px 20px rgba(124,58,237,.4);display:none;}
+  letter-spacing:.1em;cursor:pointer;border-radius:3px;
+  position:relative;overflow:hidden;transition:all .2s;
+  box-shadow:0 4px 20px rgba(124,58,237,.4);}
 #launch-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
   animation:shimmer 2.5s infinite;}
 @keyframes shimmer{0%{left:-100%}100%{left:200%}}
 #launch-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.6);}
 
-/* ── EMU SECTION ── */
+/* EMULATOR SECTION */
 #emulator-section{display:none;flex-direction:column;gap:.8rem;}
 .emu-topbar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
   background:var(--card);border:1px solid var(--border);border-radius:4px;padding:.6rem 1rem;}
@@ -136,87 +157,14 @@ input[type="file"]{display:none;}
 .btn-emu.danger:hover{border-color:var(--danger);color:var(--danger);}
 .btn-emu.active{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,.12);}
 
-/* ── SAVE STATUS BANNER ── */
-#save-banner{
-  display:none;
-  padding:.6rem 1rem;
-  border-radius:3px;
-  font-size:.58rem;
-  font-family:'Orbitron',sans-serif;
-  letter-spacing:.08em;
-  border:1px solid;
-  transition:opacity .5s;
-}
-#save-banner.ok  {background:rgba(34,197,94,.1); border-color:rgba(34,197,94,.35);color:var(--green);}
-#save-banner.err {background:rgba(239,68,68,.1);  border-color:rgba(239,68,68,.35); color:var(--danger);}
-#save-banner.info{background:rgba(6,182,212,.1);  border-color:rgba(6,182,212,.35); color:var(--accent2);}
+/* Save status banner */
+#save-banner{display:none;padding:.6rem 1rem;border-radius:3px;font-size:.58rem;
+  font-family:'Orbitron',sans-serif;letter-spacing:.08em;border:1px solid;transition:opacity .5s;}
+#save-banner.ok  {background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.35);color:var(--green);}
+#save-banner.err {background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:var(--danger);}
+#save-banner.info{background:rgba(6,182,212,.1);border-color:rgba(6,182,212,.35);color:var(--accent2);}
 
-/* ── GAME WRAPPER ── */
-#game-wrapper{
-  position:relative;background:#000;
-  border:2px solid var(--border);border-radius:4px;overflow:hidden;
-  box-shadow:0 0 40px rgba(0,0,0,.8),0 0 60px rgba(124,58,237,.1);
-  min-height:300px;
-}
-#game{width:100%;display:block;}
-
-/* ── TOUCH OVERLAY ── */
-#touch-overlay{
-  display:none;position:absolute;inset:0;z-index:50;
-  pointer-events:none; /* container transparent — buttons handle own events */
-}
-#touch-overlay.visible{display:block;}
-
-/* ── TOUCH BUTTONS ── */
-.t-btn{
-  position:absolute;
-  display:flex;align-items:center;justify-content:center;
-  pointer-events:auto;
-  touch-action:none;
-  -webkit-touch-callout:none;
-  user-select:none;-webkit-user-select:none;
-  background:rgba(0,0,0,.52);
-  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-  border:2.5px solid rgba(255,255,255,.22);
-  color:rgba(255,255,255,.88);
-  font-family:'Orbitron',sans-serif;font-weight:900;
-  border-radius:50%;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
-  font-size:.78rem;
-  transition:background .07s,transform .07s,border-color .07s;
-}
-.t-btn.pressed{
-  background:rgba(124,58,237,.65) !important;
-  border-color:rgba(168,85,247,.95) !important;
-  transform:scale(.88) !important;
-}
-/* D-pad zone */
-#dpad-zone{position:absolute;bottom:55px;left:10px;width:136px;height:136px;pointer-events:none;}
-#tb-up   {width:42px;height:42px;top:0;   left:50%;transform:translateX(-50%);}
-#tb-down {width:42px;height:42px;bottom:0;left:50%;transform:translateX(-50%);}
-#tb-left {width:42px;height:42px;left:0;  top:50%; transform:translateY(-50%);}
-#tb-right{width:42px;height:42px;right:0; top:50%; transform:translateY(-50%);}
-#tb-up.pressed,#tb-down.pressed,#tb-left.pressed,#tb-right.pressed{
-  background:rgba(6,182,212,.5)!important;border-color:rgba(6,182,212,.9)!important;}
-#dpad-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);pointer-events:none;}
-/* Face buttons */
-#face-zone{position:absolute;bottom:55px;right:10px;width:126px;height:126px;pointer-events:none;}
-#tb-a{width:52px;height:52px;right:0;top:50%;transform:translateY(-50%);
-  border-color:rgba(239,68,68,.7);color:#fc8181;}
-#tb-a.pressed{background:rgba(220,38,38,.6)!important;border-color:#f87171!important;}
-#tb-b{width:52px;height:52px;bottom:0;left:50%;transform:translateX(-50%);
-  border-color:rgba(234,179,8,.65);color:#fbbf24;}
-#tb-b.pressed{background:rgba(180,130,0,.6)!important;border-color:#fcd34d!important;}
-/* L/R triggers */
-#tb-l{width:68px;height:30px;border-radius:14px;top:8px;left:8px;font-size:.52rem;letter-spacing:.12em;}
-#tb-r{width:68px;height:30px;border-radius:14px;top:8px;right:8px;font-size:.52rem;letter-spacing:.12em;}
-/* Start/Select */
-#tb-select{width:66px;height:24px;border-radius:12px;bottom:10px;left:50%;margin-left:-76px;font-size:.42rem;letter-spacing:.08em;}
-#tb-start {width:66px;height:24px;border-radius:12px;bottom:10px;left:50%;margin-left:10px; font-size:.42rem;letter-spacing:.08em;}
-
-/* ── SETTINGS ── */
+/* Settings panel */
 #settings-panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
 #settings-panel.open{display:block;}
 .settings-header{display:flex;align-items:center;justify-content:space-between;
@@ -227,8 +175,8 @@ input[type="file"]{display:none;}
 .setting-label{font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.25em;color:var(--muted);text-transform:uppercase;}
 .speed-btns{display:flex;gap:.4rem;flex-wrap:wrap;}
 .speed-btn{padding:.4rem .8rem;border:1px solid var(--border);background:transparent;
-  color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.58rem;cursor:pointer;
-  border-radius:2px;transition:all .2s;letter-spacing:.05em;}
+  color:var(--muted);font-family:'Orbitron',sans-serif;font-size:.58rem;
+  cursor:pointer;border-radius:2px;transition:all .2s;letter-spacing:.05em;}
 .speed-btn:hover{border-color:var(--accent2);color:var(--accent2);}
 .speed-btn.active{border-color:var(--accent3);color:var(--accent3);
   background:rgba(245,158,11,.1);box-shadow:0 0 10px rgba(245,158,11,.2);}
@@ -240,7 +188,60 @@ input[type="file"]{display:none;}
 .toggle-opt.active{background:var(--accent);color:#fff;box-shadow:var(--glow);}
 .setting-note{font-size:.55rem;color:var(--muted);line-height:1.6;}
 
-/* ── STATUS BAR ── */
+/* Game wrapper */
+#game-wrapper{position:relative;background:#000;
+  border:2px solid var(--border);border-radius:4px;overflow:hidden;
+  box-shadow:0 0 40px rgba(0,0,0,.8),0 0 60px rgba(124,58,237,.1);
+  min-height:300px;}
+#game{width:100%;display:block;}
+
+/* Touch overlay — pointer-events:none on container so game canvas stays interactive */
+#touch-overlay{display:none;position:absolute;inset:0;z-index:50;pointer-events:none;}
+#touch-overlay.visible{display:block;}
+
+/* Touch buttons */
+.t-btn{
+  position:absolute;display:flex;align-items:center;justify-content:center;
+  pointer-events:auto;touch-action:none;
+  -webkit-touch-callout:none;user-select:none;-webkit-user-select:none;
+  background:rgba(0,0,0,.52);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  border:2.5px solid rgba(255,255,255,.22);color:rgba(255,255,255,.88);
+  font-family:'Orbitron',sans-serif;font-weight:900;border-radius:50%;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;font-size:.78rem;
+  transition:background .07s,transform .07s,border-color .07s;
+}
+.t-btn.pressed{background:rgba(124,58,237,.65)!important;border-color:rgba(168,85,247,.95)!important;transform:scale(.88)!important;}
+
+/* D-pad */
+#dpad-zone{position:absolute;bottom:55px;left:10px;width:136px;height:136px;pointer-events:none;}
+#tb-up   {width:42px;height:42px;top:0;   left:50%;transform:translateX(-50%);}
+#tb-down {width:42px;height:42px;bottom:0;left:50%;transform:translateX(-50%);}
+#tb-left {width:42px;height:42px;left:0;  top:50%; transform:translateY(-50%);}
+#tb-right{width:42px;height:42px;right:0; top:50%; transform:translateY(-50%);}
+#tb-up.pressed,#tb-down.pressed,#tb-left.pressed,#tb-right.pressed{
+  background:rgba(6,182,212,.5)!important;border-color:rgba(6,182,212,.9)!important;}
+#dpad-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);pointer-events:none;}
+
+/* Face buttons */
+#face-zone{position:absolute;bottom:55px;right:10px;width:126px;height:126px;pointer-events:none;}
+#tb-a{width:52px;height:52px;right:0;top:50%;transform:translateY(-50%);
+  border-color:rgba(239,68,68,.7);color:#fc8181;}
+#tb-a.pressed{background:rgba(220,38,38,.6)!important;border-color:#f87171!important;}
+#tb-b{width:52px;height:52px;bottom:0;left:50%;transform:translateX(-50%);
+  border-color:rgba(234,179,8,.65);color:#fbbf24;}
+#tb-b.pressed{background:rgba(180,130,0,.6)!important;border-color:#fcd34d!important;}
+
+/* L/R triggers */
+#tb-l{width:68px;height:30px;border-radius:14px;top:8px;left:8px;font-size:.52rem;letter-spacing:.12em;}
+#tb-r{width:68px;height:30px;border-radius:14px;top:8px;right:8px;font-size:.52rem;letter-spacing:.12em;}
+
+/* Start/Select */
+#tb-select{width:66px;height:24px;border-radius:12px;bottom:10px;left:50%;margin-left:-76px;font-size:.42rem;letter-spacing:.08em;}
+#tb-start {width:66px;height:24px;border-radius:12px;bottom:10px;left:50%;margin-left:10px; font-size:.42rem;letter-spacing:.08em;}
+
+/* Status bar */
 .emu-status{display:flex;gap:1rem;flex-wrap:wrap;font-size:.55rem;color:var(--muted);padding:.3rem .1rem;}
 .emu-status span{display:flex;align-items:center;gap:.3rem;}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--green);
@@ -253,12 +254,11 @@ input[type="file"]{display:none;}
   border-radius:2px;padding:.1rem .35rem;color:var(--green);
   font-family:'Orbitron',sans-serif;font-size:.5rem;}
 
-/* ── LOADING ── */
+/* Loading overlay */
 #loading-overlay{display:none;position:fixed;inset:0;background:rgba(10,10,18,.93);
   z-index:1000;align-items:center;justify-content:center;flex-direction:column;gap:1rem;}
 #loading-overlay.show{display:flex;}
-.loading-text{font-family:'Press Start 2P',monospace;font-size:.65rem;color:var(--accent2);
-  animation:blink 1s infinite;}
+.loading-text{font-family:'Press Start 2P',monospace;font-size:.65rem;color:var(--accent2);animation:blink 1s infinite;}
 .loading-sub{font-size:.55rem;color:var(--muted);font-family:'Orbitron',sans-serif;letter-spacing:.1em;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .loading-bar{width:220px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
@@ -281,6 +281,7 @@ input[type="file"]{display:none;}
 </head>
 <body>
 
+<!-- Loading overlay -->
 <div id="loading-overlay">
   <div class="loading-text" id="loading-text">LOADING...</div>
   <div class="loading-bar"><div class="loading-bar-inner"></div></div>
@@ -295,45 +296,45 @@ input[type="file"]{display:none;}
 
 <main>
 
-<!-- ════════════ UPLOAD PAGE ════════════ -->
+<!-- ══════════════════════ UPLOAD PAGE ══════════════════════ -->
 <div id="upload-section" class="fade-in">
 
-  <div class="section-label">01 // Load ROM File</div>
-  <div class="upload-card" id="rom-drop-zone">
+  <div class="section-label">01 // ROM File</div>
+  <div class="upload-card" id="rom-card">
     <div class="upload-row">
       <div class="file-icon">🎮</div>
       <div class="file-meta">
         <h3>ROM FILE</h3>
-        <p>Supported: .gba · .zip (containing .gba)</p>
+        <p>Accepts: .gba or .zip containing a .gba</p>
         <div class="file-status" id="rom-status">[ NO FILE SELECTED ]</div>
       </div>
-      <button class="btn-upload" onclick="document.getElementById('rom-input').click()">SELECT ROM</button>
+      <!--
+        FIX: <label for="..."> is the most reliable way to open a file picker.
+        It works even when user-select:none is active and on all mobile browsers.
+      -->
+      <label class="file-label" for="rom-input">SELECT ROM</label>
     </div>
-    <div class="drop-hint" id="rom-drop-hint">⬆ DROP .GBA / .ZIP FILE HERE</div>
-    <input type="file" id="rom-input" accept=".gba,.zip">
+    <div class="drop-hint">⬆ OR DROP .GBA / .ZIP FILE HERE</div>
+    <input class="file-input" type="file" id="rom-input" accept=".gba,.zip,.GBA,.ZIP">
   </div>
 
-  <div class="section-label">02 // Load Save File (Optional)</div>
-  <div class="upload-card" id="sav-drop-zone">
+  <div class="section-label">02 // Save File (Optional)</div>
+  <div class="upload-card" id="sav-card">
     <div class="upload-row">
       <div class="file-icon">💾</div>
       <div class="file-meta">
-        <h3>SAVE FILE <span style="color:var(--muted);font-size:.5rem;font-weight:400;">(.sav / .srm)</span></h3>
-        <p>Load your existing save data to continue where you left off</p>
+        <h3>SAVE FILE</h3>
+        <p>Accepts: .sav .srm — continues your existing progress</p>
         <div class="file-status" id="sav-status">[ OPTIONAL — SKIP FOR NEW GAME ]</div>
       </div>
-      <button class="btn-upload secondary" onclick="document.getElementById('sav-input').click()">SELECT SAV</button>
+      <label class="file-label secondary" for="sav-input">SELECT SAV</label>
     </div>
-    <div class="drop-hint" id="sav-drop-hint">⬆ DROP .SAV / .SRM FILE HERE</div>
-    <!-- Info box shown after valid sav is loaded -->
-    <div id="sav-info-box">
-      <strong>✓ Save file ready.</strong> It will be injected into the emulator's filesystem
-      when the game starts. Your progress will continue from this save.
-      <br><br>
-      <strong>To export saves after playing:</strong> use the <em>💾 Export Save</em> button
-      in the emulator toolbar.
+    <div class="drop-hint">⬆ OR DROP .SAV / .SRM FILE HERE</div>
+    <div class="sav-info" id="sav-info">
+      <strong>✓ Save file ready.</strong> It will be injected into the emulator filesystem when the
+      game starts. Use the <em>💾 Export Save</em> button after playing to download your updated save.
     </div>
-    <input type="file" id="sav-input" accept=".sav,.srm,.sa,.sa1,.sa2">
+    <input class="file-input" type="file" id="sav-input" accept=".sav,.srm,.sa,.sa1,.sa2,.SAV,.SRM">
   </div>
 
   <div class="section-label">03 // Keyboard Controls</div>
@@ -349,33 +350,31 @@ input[type="file"]{display:none;}
       <div class="ctrl-item"><span class="key-badge">F1</span><span class="ctrl-desc">Save State</span></div>
       <div class="ctrl-item"><span class="key-badge">F3</span><span class="ctrl-desc">Load State</span></div>
     </div>
-    <p style="font-size:.58rem;color:var(--muted);margin-top:.8rem;">🎮 Physical gamepad/controller also supported automatically.</p>
+    <p style="font-size:.58rem;color:var(--muted);margin-top:.8rem;">🎮 Physical gamepad supported automatically when connected.</p>
   </div>
 
   <div class="notice">
     <strong>⚠ LEGAL NOTICE:</strong> This emulator does not distribute ROMs.
-    Only play games you legally own. Save data is stored locally in your browser.
+    Only play games you legally own. All save data stays in your browser locally.
   </div>
 
   <button id="launch-btn" onclick="launchEmulator()">▶ &nbsp;LAUNCH GAME</button>
 </div>
 
-<!-- ════════════ EMULATOR PAGE ════════════ -->
+<!-- ══════════════════════ EMULATOR PAGE ══════════════════════ -->
 <div id="emulator-section">
 
   <div class="emu-topbar fade-in">
     <div class="game-title-display">▶ <span id="game-name-display">—</span></div>
     <div class="emu-btns">
-      <button class="btn-emu green-btn" id="btn-export" onclick="exportSave()" title="Download your current save file">💾 EXPORT SAVE</button>
+      <button class="btn-emu green-btn" onclick="exportSave()">💾 EXPORT SAVE</button>
       <button class="btn-emu" id="btn-settings" onclick="toggleSettings()">⚙ SETTINGS</button>
       <button class="btn-emu danger" onclick="resetEmulator()">✕ QUIT</button>
     </div>
   </div>
 
-  <!-- Save status banner -->
   <div id="save-banner"></div>
 
-  <!-- Settings panel -->
   <div id="settings-panel">
     <div class="settings-header">
       <h2>⚙ &nbsp;SETTINGS</h2>
@@ -385,29 +384,26 @@ input[type="file"]{display:none;}
       <div class="setting-row">
         <div class="setting-label">🚀 &nbsp;Game Speed</div>
         <div class="speed-btns">
-          <button class="speed-btn" data-speed="0.5" onclick="setSpeed(0.5)">0.5×</button>
-          <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1× Normal</button>
-          <button class="speed-btn" data-speed="1.5" onclick="setSpeed(1.5)">1.5×</button>
-          <button class="speed-btn" data-speed="2"   onclick="setSpeed(2)">2× Fast</button>
-          <button class="speed-btn" data-speed="3"   onclick="setSpeed(3)">3× Turbo</button>
-          <button class="speed-btn" data-speed="4"   onclick="setSpeed(4)">4× Ultra</button>
+          <button class="speed-btn"        data-speed="0.5" onclick="setSpeed(0.5)">0.5×</button>
+          <button class="speed-btn active" data-speed="1"   onclick="setSpeed(1)">1× Normal</button>
+          <button class="speed-btn"        data-speed="1.5" onclick="setSpeed(1.5)">1.5×</button>
+          <button class="speed-btn"        data-speed="2"   onclick="setSpeed(2)">2× Fast</button>
+          <button class="speed-btn"        data-speed="3"   onclick="setSpeed(3)">3× Turbo</button>
+          <button class="speed-btn"        data-speed="4"   onclick="setSpeed(4)">4× Ultra</button>
         </div>
         <div class="setting-note">Adjusts how fast the game runs. Higher = faster gameplay and audio.</div>
       </div>
       <div class="setting-row">
         <div class="setting-label">🎮 &nbsp;Control Mode</div>
         <div class="toggle-row">
-          <button class="toggle-opt" id="opt-keyboard" onclick="setControlMode('keyboard')">⌨ &nbsp;KEYBOARD</button>
-          <button class="toggle-opt active" id="opt-touch" onclick="setControlMode('touch')">👆 &nbsp;TOUCH</button>
+          <button class="toggle-opt"        id="opt-keyboard" onclick="setControlMode('keyboard')">⌨ &nbsp;KEYBOARD</button>
+          <button class="toggle-opt active" id="opt-touch"    onclick="setControlMode('touch')">👆 &nbsp;TOUCH</button>
         </div>
-        <div class="setting-note" id="ctrl-note">
-          Touch mode: D-Pad + A/B/L/R/Start/Select shown over the game screen.
-        </div>
+        <div class="setting-note" id="ctrl-note">Touch mode: D-Pad, A, B, L, R, Start, Select shown over the game.</div>
       </div>
     </div>
   </div>
 
-  <!-- Game + touch overlay -->
   <div id="game-wrapper">
     <div id="game"></div>
     <div id="touch-overlay" class="visible">
@@ -436,120 +432,162 @@ input[type="file"]{display:none;}
     <span id="ctrl-mode-tag">👆 Touch Controls</span>
     <span id="save-load-tag" style="display:none"><span class="save-tag">💾 Save Loaded</span></span>
   </div>
-
 </div>
+
 </main>
 
 <script>
-/* ════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    STATE
-════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════ */
 let romFile      = null;
 let savFile      = null;
-let savBytes     = null;   // Uint8Array — read eagerly when file is chosen
+let savBytes     = null;   // Uint8Array, read immediately when file is chosen
 let romBlobUrl   = null;
 let currentSpeed = 1;
 let controlMode  = 'touch';
 let settingsOpen = false;
 
-/* ════════════════════════════════════════════════════════════
-   FILE HANDLING
-════════════════════════════════════════════════════════════ */
-document.getElementById('rom-input').addEventListener('change', e => {
-  if (e.target.files[0]) handleRom(e.target.files[0]);
+/* ═══════════════════════════════════════════════════════════
+   FILE INPUT HANDLERS
+   ─────────────────────────────────────────────────────────
+   Using <label for="id"> in HTML — no JS .click() needed.
+   The change event fires reliably on all browsers.
+═══════════════════════════════════════════════════════════ */
+document.getElementById('rom-input').addEventListener('change', function() {
+  if (this.files && this.files[0]) handleRom(this.files[0]);
+  // Reset value so same file can be re-selected if needed
+  this.value = '';
 });
-document.getElementById('sav-input').addEventListener('change', e => {
-  if (e.target.files[0]) handleSav(e.target.files[0]);
+
+document.getElementById('sav-input').addEventListener('change', function() {
+  if (this.files && this.files[0]) handleSav(this.files[0]);
+  this.value = '';
 });
 
 function handleRom(f) {
+  // Validate extension
+  const ext = f.name.split('.').pop().toLowerCase();
+  if (!['gba','zip'].includes(ext)) {
+    setFileStatus('rom-status', 'err', '[ ✗ Invalid file. Please select a .gba or .zip file ]');
+    romFile = null;
+    checkLaunch();
+    return;
+  }
   romFile = f;
-  const s = document.getElementById('rom-status');
-  s.textContent = '[ ✓ ' + f.name + ' (' + (f.size/1024/1024).toFixed(2) + ' MB) ]';
-  s.className = 'file-status loaded';
+  setFileStatus('rom-status', 'ok',
+    '[ ✓ ' + f.name + ' — ' + (f.size / 1024 / 1024).toFixed(2) + ' MB ]');
   checkLaunch();
 }
 
 async function handleSav(f) {
+  // Validate extension
+  const ext = f.name.split('.').pop().toLowerCase();
+  if (!['sav','srm','sa','sa1','sa2'].includes(ext)) {
+    setFileStatus('sav-status', 'err', '[ ✗ Invalid file. Please select a .sav or .srm file ]');
+    savFile  = null;
+    savBytes = null;
+    document.getElementById('sav-info').style.display = 'none';
+    return;
+  }
+
   savFile = f;
-  // ── Read bytes immediately and eagerly so they're ready before launch ──
+  setFileStatus('sav-status', 'ok', '[ Reading... ]');
+
   try {
+    // Read bytes immediately — no race conditions at launch time
     const buf = await f.arrayBuffer();
     savBytes = new Uint8Array(buf);
-    const s = document.getElementById('sav-status');
-    s.textContent = '[ ✓ ' + f.name + ' — ' + (savBytes.length / 1024).toFixed(1) + ' KB ready ]';
-    s.className = 'file-status loaded';
-    document.getElementById('sav-info-box').style.display = 'block';
+    setFileStatus('sav-status', 'ok',
+      '[ ✓ ' + f.name + ' — ' + (savBytes.length / 1024).toFixed(1) + ' KB ready ]');
+    document.getElementById('sav-info').style.display = 'block';
   } catch(err) {
     savBytes = null;
-    const s = document.getElementById('sav-status');
-    s.textContent = '[ ✗ Could not read file: ' + err.message + ' ]';
-    s.className = 'file-status error';
+    setFileStatus('sav-status', 'err', '[ ✗ Could not read file: ' + err.message + ' ]');
+    document.getElementById('sav-info').style.display = 'none';
   }
+}
+
+function setFileStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className   = 'file-status ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
 }
 
 function checkLaunch() {
   const btn = document.getElementById('launch-btn');
   if (romFile) {
     btn.style.display = 'block';
-    btn.innerHTML = '▶ &nbsp;LAUNCH ' + romFile.name.replace(/\.(gba|zip)$/i,'').toUpperCase().substring(0,26);
+    const name = romFile.name.replace(/\.(gba|zip)$/i, '').toUpperCase().substring(0, 28);
+    btn.innerHTML = '▶ &nbsp;LAUNCH ' + name;
+  } else {
+    btn.style.display = 'none';
   }
 }
 
-/* drag & drop */
-function setupDrop(zId, hId, fn) {
-  const z = document.getElementById(zId), h = document.getElementById(hId);
-  z.addEventListener('dragover',  e => { e.preventDefault(); z.classList.add('active-drop'); h.classList.add('dragging'); });
-  z.addEventListener('dragleave', ()  => { z.classList.remove('active-drop'); h.classList.remove('dragging'); });
-  z.addEventListener('drop',      e  => {
+/* ═══════════════════════════════════════════════════════════
+   DRAG & DROP
+═══════════════════════════════════════════════════════════ */
+function setupDrop(cardId, handler) {
+  const card = document.getElementById(cardId);
+
+  card.addEventListener('dragenter', e => { e.preventDefault(); card.classList.add('drag-over'); });
+  card.addEventListener('dragover',  e => { e.preventDefault(); card.classList.add('drag-over'); });
+  card.addEventListener('dragleave', e => {
+    // Only remove if leaving the card itself (not a child element)
+    if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
+  });
+  card.addEventListener('drop', e => {
     e.preventDefault();
-    z.classList.remove('active-drop'); h.classList.remove('dragging');
-    if (e.dataTransfer.files[0]) fn(e.dataTransfer.files[0]);
+    card.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) handler(f);
   });
 }
-setupDrop('rom-drop-zone','rom-drop-hint', handleRom);
-setupDrop('sav-drop-zone','sav-drop-hint', handleSav);
+
+setupDrop('rom-card', handleRom);
+setupDrop('sav-card', handleSav);
+
+// Prevent browser from opening files dropped outside the zones
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop',     e => e.preventDefault());
 
-/* ════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    LAUNCH EMULATOR
-════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════ */
 async function launchEmulator() {
   if (!romFile) return;
 
-  setLoading(true, 'LOADING GAME...', 'READING FILES');
+  setLoading(true, 'READING FILES...', 'PREPARING ROM');
 
-  // ── Ensure save bytes are ready (in case handleSav is still reading) ──
+  // If savBytes not read yet (shouldn't happen — we read eagerly), read now
   if (savFile && !savBytes) {
-    setLoading(true, 'LOADING SAVE...', 'READING SAVE FILE');
     try {
       const buf = await savFile.arrayBuffer();
-      savBytes = new Uint8Array(buf);
+      savBytes  = new Uint8Array(buf);
     } catch(e) {
       savBytes = null;
     }
   }
 
+  // Create blob URL for ROM
   if (romBlobUrl) URL.revokeObjectURL(romBlobUrl);
   romBlobUrl = URL.createObjectURL(romFile);
 
-  const gameName    = romFile.name.replace(/\.(gba|zip)$/i,'');
-  const romBaseName = gameName; // used for save path
+  const gameName = romFile.name.replace(/\.(gba|zip)$/i, '');
 
-  document.getElementById('game-name-display').textContent = gameName;
-  document.getElementById('upload-section').style.display = 'none';
+  // Switch UI
+  document.getElementById('upload-section').style.display  = 'none';
   document.getElementById('emulator-section').style.display = 'flex';
   document.getElementById('game').innerHTML = '';
+  document.getElementById('game-name-display').textContent = gameName;
   hideBanner();
   applyControlMode(controlMode);
 
-  await new Promise(r => setTimeout(r, 300));
-  setLoading(true, 'LOADING GAME...', 'CONNECTING TO EMULATOR');
+  await new Promise(r => setTimeout(r, 200));
+  setLoading(true, 'LOADING EMULATOR...', 'CONNECTING TO CDN');
 
-  /* ─────────────────────────────────────────────────────────
-     SET EJS GLOBALS  — must ALL be set BEFORE loader.js runs
-  ───────────────────────────────────────────────────────── */
+  /* ─── EJS Globals — must be set BEFORE loader.js runs ─── */
   window.EJS_player          = '#game';
   window.EJS_gameUrl         = romBlobUrl;
   window.EJS_core            = 'gba';
@@ -559,156 +597,140 @@ async function launchEmulator() {
   window.EJS_backgroundColor = '#000000';
   window.EJS_VirtualGamepad  = false;
 
-  /* ─────────────────────────────────────────────────────────
-     SAVE FILE INJECTION
-     ───────────────────────────────────────────────────────
-     EJS_onGameStart fires after the libretro core has fully
-     initialized but before the first frame.  At that point
-     window.EJS_emulator.FS (Emscripten MEMFS) is available.
-
-     GBA battery-save path inside EmulatorJS/mGBA:
-       /home/web_user/retroarch/userdata/saves/<name>.srm
-
-     We try several extensions (.srm, .sav) and directory
-     variants so it works regardless of the exact core build.
-  ───────────────────────────────────────────────────────── */
+  /* ─── Save injection setup ─── */
   window._saveInjected = false;
+  const _savBytes      = savBytes;   // capture in closure
+  const _gameName      = gameName;
 
-  if (savBytes && savBytes.length > 0) {
+  if (_savBytes && _savBytes.length > 0) {
+    // Primary trigger: EJS_onGameStart
     window.EJS_onGameStart = function() {
-      scheduleSaveInjection(romBaseName, savBytes);
+      scheduleSaveInjection(_gameName, _savBytes);
     };
   } else {
     window.EJS_onGameStart = null;
   }
 
-  /* load the emulator */
-  const old = document.getElementById('ejs-loader');
-  if (old) old.remove();
-  const scr = document.createElement('script');
-  scr.id  = 'ejs-loader';
-  scr.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-  scr.onload = () => {
+  /* ─── Load EmulatorJS ─── */
+  const oldScript = document.getElementById('ejs-loader');
+  if (oldScript) oldScript.remove();
+
+  const script  = document.createElement('script');
+  script.id     = 'ejs-loader';
+  script.src    = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+
+  script.onload = function() {
     setLoading(false);
-    setTimeout(() => applySpeed(currentSpeed), 4000);
-    // Fallback: also poll from loader.onload in case EJS_onGameStart never fires
-    if (savBytes && savBytes.length > 0) {
-      scheduleSaveInjection(romBaseName, savBytes);
+    // Fallback trigger: also poll from here in case EJS_onGameStart never fired
+    if (_savBytes && _savBytes.length > 0) {
+      scheduleSaveInjection(_gameName, _savBytes);
     }
+    setTimeout(function() { applySpeed(currentSpeed); }, 4000);
   };
-  scr.onerror = () => {
+
+  script.onerror = function() {
     setLoading(false);
     document.getElementById('game').innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:center;height:280px;' +
-      'flex-direction:column;gap:1rem;padding:2rem;text-align:center;">' +
+      '<div style="display:flex;align-items:center;justify-content:center;' +
+      'height:280px;flex-direction:column;gap:1rem;padding:2rem;text-align:center;">' +
       '<div style="font-family:\'Press Start 2P\',monospace;font-size:.7rem;color:#ef4444;">CDN ERROR</div>' +
-      '<div style="font-size:.62rem;color:#64748b;line-height:1.9;">Failed to reach EmulatorJS CDN.<br>' +
-      'Check your internet connection.<br><br>' +
-      '<span style="color:#06b6d4">cdn.emulatorjs.org</span> must be accessible.</div>' +
+      '<div style="font-size:.62rem;color:#64748b;line-height:1.9;">' +
+      'Could not reach EmulatorJS CDN.<br>Check your internet connection.<br><br>' +
+      '<span style="color:#06b6d4">cdn.emulatorjs.org</span> must be reachable.</div>' +
       '<button onclick="resetEmulator()" style="margin-top:.5rem;padding:.5rem 1.2rem;' +
       'border:1px solid #7c3aed;background:transparent;color:#7c3aed;' +
-      'font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;">← BACK</button>' +
-      '</div>';
+      'font-family:Orbitron,sans-serif;font-size:.58rem;cursor:pointer;border-radius:2px;">' +
+      '← BACK</button></div>';
   };
-  document.body.appendChild(scr);
+
+  document.body.appendChild(script);
 }
 
-/* ════════════════════════════════════════════════════════════
-   SAVE FILE INJECTION  ← THE CORE FIX
-   ──────────────────────────────────────────────────────────
-   Writes the save bytes into Emscripten's virtual filesystem
-   at the path EmulatorJS/mGBA expects for GBA battery saves.
-
-   Path convention:  /home/web_user/retroarch/userdata/saves/<name>.<ext>
-   We write both .srm and .sav because different core versions
-   look for different extensions.
-════════════════════════════════════════════════════════════ */
-/* ════════════════════════════════════════════════════════════
-   scheduleSaveInjection — POLLING RETRY WRAPPER
-   ──────────────────────────────────────────────────────────
-   Polls every 300ms until emu.FS is non-null (max 30s),
-   then calls injectSaveFile exactly once.
-   Called from both EJS_onGameStart and scr.onload.
-════════════════════════════════════════════════════════════ */
-function scheduleSaveInjection(romBaseName, bytes) {
-  if (window._saveInjected) return; // already done via other trigger
+/* ═══════════════════════════════════════════════════════════
+   SAVE INJECTION — POLLING SCHEDULER
+   ─────────────────────────────────────────────────────────
+   Polls every 300ms until emu.FS is available (max 30s).
+   Guard flag prevents double-injection from both triggers.
+═══════════════════════════════════════════════════════════ */
+function scheduleSaveInjection(gameName, bytes) {
+  if (window._saveInjected) return;
 
   let tries = 0;
-  const MAX = 100; // 100 * 300ms = 30 seconds max wait
+  const MAX_TRIES = 100; // 100 × 300ms = 30s
 
   function attempt() {
     if (window._saveInjected) return;
 
-    const emu = window.EJS_emulator;
-    const fs  = emu && emu.FS;
+    var emu = window.EJS_emulator;
+    var fs  = emu && emu.FS;
 
     if (fs) {
       window._saveInjected = true;
-      injectSaveFile(romBaseName, bytes, fs);
+      injectSaveFile(gameName, bytes, fs);
       return;
     }
 
     tries++;
-    if (tries >= MAX) {
-      showBanner('err', '✗ Save timed out — emulator filesystem never became ready');
+    if (tries >= MAX_TRIES) {
+      showBanner('err', '✗ Save load timed out — emulator FS never became ready');
       return;
     }
     setTimeout(attempt, 300);
   }
 
-  setTimeout(attempt, 500); // initial delay — let loader.js run first
+  // Small initial delay to let loader.js initialize
+  setTimeout(attempt, 600);
 }
 
-/* ════════════════════════════════════════════════════════════
-   injectSaveFile — WRITE BYTES INTO EMSCRIPTEN MEMFS
-   ──────────────────────────────────────────────────────────
-   FS is passed in directly (already verified non-null).
-   Writes both .srm and .sav so whichever ext the core
-   looks for it will find.
-════════════════════════════════════════════════════════════ */
-function injectSaveFile(romBaseName, bytes, FS) {
+/* ═══════════════════════════════════════════════════════════
+   SAVE INJECTION — WRITE INTO EMSCRIPTEN MEMFS
+   ─────────────────────────────────────────────────────────
+   GBA save path: /home/web_user/retroarch/userdata/saves/
+   Writes both .srm and .sav — different core builds look
+   for different extensions.
+═══════════════════════════════════════════════════════════ */
+function injectSaveFile(gameName, bytes, FS) {
   try {
-    // Ensure all parent directories exist
-    const dirs = [
+    // Create directory tree
+    var dirs = [
       '/home',
       '/home/web_user',
       '/home/web_user/retroarch',
       '/home/web_user/retroarch/userdata',
-      '/home/web_user/retroarch/userdata/saves',
+      '/home/web_user/retroarch/userdata/saves'
     ];
-    for (const d of dirs) {
-      try { FS.mkdir(d); } catch(e) { /* already exists */ }
+    for (var i = 0; i < dirs.length; i++) {
+      try { FS.mkdir(dirs[i]); } catch(e) { /* dir already exists — fine */ }
     }
 
     // Write both .srm and .sav
-    const exts = ['.srm', '.sav'];
-    let written = 0;
-    for (const ext of exts) {
-      const path = '/home/web_user/retroarch/userdata/saves/' + romBaseName + ext;
+    var written = 0;
+    var exts    = ['.srm', '.sav'];
+    for (var j = 0; j < exts.length; j++) {
+      var path = '/home/web_user/retroarch/userdata/saves/' + gameName + exts[j];
       try {
         FS.writeFile(path, bytes);
         written++;
-        console.log('[GBA SAVE] Written:', path, '(' + bytes.length + ' bytes)');
+        console.log('[GBA SAVE] Written ' + bytes.length + ' bytes to ' + path);
       } catch(e) {
-        console.warn('[GBA SAVE] Could not write', path, '—', e.message);
+        console.warn('[GBA SAVE] Write failed for ' + path + ': ' + e.message);
       }
     }
 
     if (written === 0) {
-      showBanner('err', '✗ Could not write save to virtual filesystem — see console');
+      showBanner('err', '✗ Could not write save — check browser console for details');
       return;
     }
 
-    // Ask core to reload saves from FS
-    const emu = window.EJS_emulator;
+    // Ask core to reload saves from FS if the API is exposed
+    var emu = window.EJS_emulator;
     if (emu) {
-      if (typeof emu.loadSaveFiles === 'function') emu.loadSaveFiles();
-      if (emu.gameManager && typeof emu.gameManager.loadSaveFiles === 'function') {
-        emu.gameManager.loadSaveFiles();
-      }
+      if (typeof emu.loadSaveFiles === 'function')              { emu.loadSaveFiles(); }
+      if (emu.gameManager &&
+          typeof emu.gameManager.loadSaveFiles === 'function')  { emu.gameManager.loadSaveFiles(); }
     }
 
-    showBanner('ok', '✓ Save loaded (' + (bytes.length / 1024).toFixed(1) + ' KB) — your progress is restored!');
+    showBanner('ok', '✓ Save loaded (' + (bytes.length / 1024).toFixed(1) + ' KB) — progress restored!');
     document.getElementById('save-load-tag').style.display = 'flex';
 
   } catch(e) {
@@ -716,3 +738,293 @@ function injectSaveFile(romBaseName, bytes, FS) {
     showBanner('err', '✗ Save error: ' + e.message);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORT SAVE
+═══════════════════════════════════════════════════════════ */
+function exportSave() {
+  var emu = window.EJS_emulator;
+
+  // Try built-in EmulatorJS API first
+  if (emu && typeof emu.downloadSaveFiles === 'function') {
+    emu.downloadSaveFiles();
+    showBanner('ok', '✓ Save exported via EmulatorJS');
+    return;
+  }
+
+  // Fallback: read from virtual FS
+  if (emu && emu.FS) {
+    var FS   = emu.FS;
+    var name = document.getElementById('game-name-display').textContent;
+    var paths = [
+      '/home/web_user/retroarch/userdata/saves/' + name + '.srm',
+      '/home/web_user/retroarch/userdata/saves/' + name + '.sav'
+    ];
+    for (var i = 0; i < paths.length; i++) {
+      try {
+        var data = FS.readFile(paths[i]);
+        if (data && data.length > 0) {
+          var blob = new Blob([data], { type: 'application/octet-stream' });
+          var url  = URL.createObjectURL(blob);
+          var a    = document.createElement('a');
+          a.href   = url; a.download = name + '.sav';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showBanner('ok', '✓ Save exported: ' + name + '.sav');
+          return;
+        }
+      } catch(e) { /* path doesn't exist, try next */ }
+    }
+    showBanner('err', '✗ No save found yet — save in-game first, then export');
+    return;
+  }
+
+  showBanner('info', 'ℹ Emulator not running yet');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════════════ */
+function resetEmulator() {
+  var old = document.getElementById('ejs-loader');
+  if (old) old.remove();
+  if (romBlobUrl) { URL.revokeObjectURL(romBlobUrl); romBlobUrl = null; }
+
+  // Clean up all EJS globals
+  Object.keys(window).filter(function(k){ return k.startsWith('EJS_'); }).forEach(function(k){
+    try { delete window[k]; } catch(e){}
+  });
+
+  document.getElementById('game').innerHTML         = '';
+  document.getElementById('emulator-section').style.display = 'none';
+  document.getElementById('upload-section').style.display   = 'flex';
+  setLoading(false);
+  hideBanner();
+
+  if (settingsOpen) {
+    settingsOpen = false;
+    document.getElementById('settings-panel').classList.remove('open');
+    document.getElementById('btn-settings').classList.remove('active');
+  }
+
+  currentSpeed = 1;
+  document.querySelectorAll('.speed-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.speed === '1');
+  });
+  document.getElementById('speed-tag').textContent      = '1×';
+  document.getElementById('save-load-tag').style.display = 'none';
+
+  // Release all virtual buttons
+  Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════════════════════════ */
+var bannerTimer = null;
+function showBanner(type, msg) {
+  var b = document.getElementById('save-banner');
+  b.className    = type;
+  b.textContent  = msg;
+  b.style.display = 'block';
+  b.style.opacity = '1';
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(function() {
+    b.style.opacity = '0';
+    setTimeout(function(){ b.style.display = 'none'; }, 500);
+  }, 5000);
+}
+function hideBanner() {
+  var b = document.getElementById('save-banner');
+  b.style.display = 'none';
+}
+function setLoading(show, title, sub) {
+  var ov = document.getElementById('loading-overlay');
+  if (show) {
+    document.getElementById('loading-text').textContent = title || 'LOADING...';
+    document.getElementById('loading-sub').textContent  = sub   || 'PLEASE WAIT';
+    ov.classList.add('show');
+  } else {
+    ov.classList.remove('show');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════════════════════ */
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
+  document.getElementById('btn-settings').classList.toggle('active', settingsOpen);
+}
+
+function setSpeed(val) {
+  currentSpeed = val;
+  document.querySelectorAll('.speed-btn').forEach(function(b){
+    b.classList.toggle('active', parseFloat(b.dataset.speed) === val);
+  });
+  document.getElementById('speed-tag').textContent = val + '×';
+  applySpeed(val);
+}
+
+function applySpeed(val) {
+  try {
+    var emu = window.EJS_emulator;
+    if (!emu) return;
+    if (typeof emu.setSpeed === 'function')                                    { emu.setSpeed(val); return; }
+    if (emu.gameManager && typeof emu.gameManager.setSpeed === 'function')    { emu.gameManager.setSpeed(val); }
+  } catch(e) { console.warn('[GBA] setSpeed:', e); }
+}
+
+function setControlMode(mode) {
+  controlMode = mode;
+  applyControlMode(mode);
+}
+
+function applyControlMode(mode) {
+  var overlay = document.getElementById('touch-overlay');
+  var kbOpt   = document.getElementById('opt-keyboard');
+  var tOpt    = document.getElementById('opt-touch');
+  var note    = document.getElementById('ctrl-note');
+  var mTag    = document.getElementById('ctrl-mode-tag');
+  if (mode === 'touch') {
+    overlay.classList.add('visible');
+    kbOpt.classList.remove('active'); tOpt.classList.add('active');
+    note.textContent = 'Touch mode: D-Pad, A, B, L, R, Start, Select shown over the game screen.';
+    mTag.textContent = '👆 Touch Controls';
+  } else {
+    overlay.classList.remove('visible');
+    kbOpt.classList.add('active'); tOpt.classList.remove('active');
+    note.textContent = 'Keyboard mode: Arrow keys + Z/X/Enter/Shift/A/S. No on-screen buttons.';
+    mTag.textContent = '⌨ Keyboard';
+    Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOUCH → KEYBOARD EVENT SIMULATION
+   ─────────────────────────────────────────────────────────
+   EmulatorJS listens for keyboard events on the document.
+   We dispatch real KeyboardEvents so the emulator core
+   receives input exactly as if a physical key was pressed.
+═══════════════════════════════════════════════════════════ */
+var KEY_MAP = {
+  'tb-up':     { key:'ArrowUp',    code:'ArrowUp',    keyCode:38 },
+  'tb-down':   { key:'ArrowDown',  code:'ArrowDown',  keyCode:40 },
+  'tb-left':   { key:'ArrowLeft',  code:'ArrowLeft',  keyCode:37 },
+  'tb-right':  { key:'ArrowRight', code:'ArrowRight', keyCode:39 },
+  'tb-a':      { key:'z',          code:'KeyZ',       keyCode:90 },
+  'tb-b':      { key:'x',          code:'KeyX',       keyCode:88 },
+  'tb-l':      { key:'a',          code:'KeyA',       keyCode:65 },
+  'tb-r':      { key:'s',          code:'KeyS',       keyCode:83 },
+  'tb-start':  { key:'Enter',      code:'Enter',      keyCode:13 },
+  'tb-select': { key:'Shift',      code:'ShiftLeft',  keyCode:16 }
+};
+
+var heldKeys = {};
+
+function fireKey(type, k) {
+  var opts = { key:k.key, code:k.code, keyCode:k.keyCode, which:k.keyCode, bubbles:true, cancelable:true };
+  try { window.dispatchEvent(new KeyboardEvent(type, opts)); }   catch(e){}
+  try { document.dispatchEvent(new KeyboardEvent(type, opts)); } catch(e){}
+  try {
+    var canvas = document.querySelector('#game canvas');
+    if (canvas) canvas.dispatchEvent(new KeyboardEvent(type, opts));
+  } catch(e){}
+}
+
+function pressBtn(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.add('pressed');
+  var k = KEY_MAP[id];
+  if (!k || heldKeys[id]) return;
+  heldKeys[id] = true;
+  fireKey('keydown', k);
+}
+
+function releaseBtn(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('pressed');
+  var k = KEY_MAP[id];
+  if (!k || !heldKeys[id]) return;
+  delete heldKeys[id];
+  fireKey('keyup', k);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MULTI-TOUCH — track each finger independently
+═══════════════════════════════════════════════════════════ */
+var touchMap = {};  // touchIdentifier → buttonId
+
+function btnFromPoint(x, y) {
+  var el  = document.elementFromPoint(x, y);
+  if (!el) return null;
+  var btn = el.closest && el.closest('.t-btn');
+  return btn ? btn.id : null;
+}
+
+function onTouchStart(e) {
+  e.preventDefault();
+  for (var i = 0; i < e.changedTouches.length; i++) {
+    var t  = e.changedTouches[i];
+    var id = btnFromPoint(t.clientX, t.clientY);
+    if (id) { touchMap[t.identifier] = id; pressBtn(id); }
+  }
+}
+function onTouchEnd(e) {
+  e.preventDefault();
+  for (var i = 0; i < e.changedTouches.length; i++) {
+    var t  = e.changedTouches[i];
+    var id = touchMap[t.identifier];
+    if (id) {
+      delete touchMap[t.identifier];
+      // Only release if no other finger is holding the same button
+      var stillHeld = Object.values(touchMap).indexOf(id) !== -1;
+      if (!stillHeld) releaseBtn(id);
+    }
+  }
+}
+function onTouchMove(e) {
+  e.preventDefault();
+  for (var i = 0; i < e.changedTouches.length; i++) {
+    var t    = e.changedTouches[i];
+    var prev = touchMap[t.identifier];
+    var next = btnFromPoint(t.clientX, t.clientY);
+    if (prev !== next) {
+      if (prev) {
+        delete touchMap[t.identifier];
+        var stillHeld = Object.values(touchMap).indexOf(prev) !== -1;
+        if (!stillHeld) releaseBtn(prev);
+      }
+      if (next) { touchMap[t.identifier] = next; pressBtn(next); }
+    }
+  }
+}
+
+var tOverlay = document.getElementById('touch-overlay');
+tOverlay.addEventListener('touchstart',  onTouchStart, { passive: false });
+tOverlay.addEventListener('touchend',    onTouchEnd,   { passive: false });
+tOverlay.addEventListener('touchcancel', onTouchEnd,   { passive: false });
+tOverlay.addEventListener('touchmove',   onTouchMove,  { passive: false });
+
+// Mouse fallback for desktop
+Object.keys(KEY_MAP).forEach(function(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('mousedown',  function(e){ e.preventDefault(); pressBtn(id); });
+  el.addEventListener('mouseup',    function(e){ e.preventDefault(); releaseBtn(id); });
+  el.addEventListener('mouseleave', function()  { releaseBtn(id); });
+});
+
+// Release all on tab hide / window blur
+window.addEventListener('blur', function() {
+  Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
+});
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) Object.keys(KEY_MAP).forEach(function(id){ releaseBtn(id); });
+});
+</script>
+</body>
+</html>
