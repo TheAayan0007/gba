@@ -572,15 +572,13 @@ async function launchEmulator() {
      We try several extensions (.srm, .sav) and directory
      variants so it works regardless of the exact core build.
   ───────────────────────────────────────────────────────── */
+  window._saveInjected = false;
+
   if (savBytes && savBytes.length > 0) {
     window.EJS_onGameStart = function() {
-      // Give the core a moment to fully mount its FS
-      setTimeout(function() {
-        injectSaveFile(romBaseName, savBytes);
-      }, 800);
+      scheduleSaveInjection(romBaseName, savBytes);
     };
   } else {
-    // Clear any stale callback from a previous session
     window.EJS_onGameStart = null;
   }
 
@@ -593,6 +591,10 @@ async function launchEmulator() {
   scr.onload = () => {
     setLoading(false);
     setTimeout(() => applySpeed(currentSpeed), 4000);
+    // Fallback: also poll from loader.onload in case EJS_onGameStart never fires
+    if (savBytes && savBytes.length > 0) {
+      scheduleSaveInjection(romBaseName, savBytes);
+    }
   };
   scr.onerror = () => {
     setLoading(false);
@@ -621,14 +623,51 @@ async function launchEmulator() {
    We write both .srm and .sav because different core versions
    look for different extensions.
 ════════════════════════════════════════════════════════════ */
-function injectSaveFile(romBaseName, bytes) {
-  try {
+/* ════════════════════════════════════════════════════════════
+   scheduleSaveInjection — POLLING RETRY WRAPPER
+   ──────────────────────────────────────────────────────────
+   Polls every 300ms until emu.FS is non-null (max 30s),
+   then calls injectSaveFile exactly once.
+   Called from both EJS_onGameStart and scr.onload.
+════════════════════════════════════════════════════════════ */
+function scheduleSaveInjection(romBaseName, bytes) {
+  if (window._saveInjected) return; // already done via other trigger
+
+  let tries = 0;
+  const MAX = 100; // 100 * 300ms = 30 seconds max wait
+
+  function attempt() {
+    if (window._saveInjected) return;
+
     const emu = window.EJS_emulator;
-    if (!emu) { showBanner('err', '✗ Emulator not ready — save not loaded'); return; }
+    const fs  = emu && emu.FS;
 
-    const FS = emu.FS;
-    if (!FS) { showBanner('err', '✗ Virtual filesystem unavailable — save not loaded'); return; }
+    if (fs) {
+      window._saveInjected = true;
+      injectSaveFile(romBaseName, bytes, fs);
+      return;
+    }
 
+    tries++;
+    if (tries >= MAX) {
+      showBanner('err', '✗ Save timed out — emulator filesystem never became ready');
+      return;
+    }
+    setTimeout(attempt, 300);
+  }
+
+  setTimeout(attempt, 500); // initial delay — let loader.js run first
+}
+
+/* ════════════════════════════════════════════════════════════
+   injectSaveFile — WRITE BYTES INTO EMSCRIPTEN MEMFS
+   ──────────────────────────────────────────────────────────
+   FS is passed in directly (already verified non-null).
+   Writes both .srm and .sav so whichever ext the core
+   looks for it will find.
+════════════════════════════════════════════════════════════ */
+function injectSaveFile(romBaseName, bytes, FS) {
+  try {
     // Ensure all parent directories exist
     const dirs = [
       '/home',
@@ -638,331 +677,42 @@ function injectSaveFile(romBaseName, bytes) {
       '/home/web_user/retroarch/userdata/saves',
     ];
     for (const d of dirs) {
-      try { FS.mkdir(d); } catch(e) { /* already exists — fine */ }
+      try { FS.mkdir(d); } catch(e) { /* already exists */ }
     }
 
-    // Write under both extensions — the core will pick up whichever it looks for
-    const extensions = ['.srm', '.sav'];
+    // Write both .srm and .sav
+    const exts = ['.srm', '.sav'];
     let written = 0;
-    for (const ext of extensions) {
+    for (const ext of exts) {
       const path = '/home/web_user/retroarch/userdata/saves/' + romBaseName + ext;
       try {
         FS.writeFile(path, bytes);
         written++;
         console.log('[GBA SAVE] Written:', path, '(' + bytes.length + ' bytes)');
       } catch(e) {
-        console.warn('[GBA SAVE] Write failed for', path, e);
+        console.warn('[GBA SAVE] Could not write', path, '—', e.message);
       }
     }
 
     if (written === 0) {
-      showBanner('err', '✗ Could not write save to virtual filesystem');
+      showBanner('err', '✗ Could not write save to virtual filesystem — see console');
       return;
     }
 
-    // Ask the core to reload saves from FS if the API is available
-    if (typeof emu.gameManager?.loadSaveFiles === 'function') {
-      emu.gameManager.loadSaveFiles();
-    }
-    if (typeof emu.loadSaveFiles === 'function') {
-      emu.loadSaveFiles();
+    // Ask core to reload saves from FS
+    const emu = window.EJS_emulator;
+    if (emu) {
+      if (typeof emu.loadSaveFiles === 'function') emu.loadSaveFiles();
+      if (emu.gameManager && typeof emu.gameManager.loadSaveFiles === 'function') {
+        emu.gameManager.loadSaveFiles();
+      }
     }
 
-    showBanner('ok', '✓ Save file loaded — your progress has been restored');
+    showBanner('ok', '✓ Save loaded (' + (bytes.length / 1024).toFixed(1) + ' KB) — your progress is restored!');
     document.getElementById('save-load-tag').style.display = 'flex';
 
   } catch(e) {
     console.error('[GBA SAVE] Injection error:', e);
-    showBanner('err', '✗ Save injection error: ' + e.message);
+    showBanner('err', '✗ Save error: ' + e.message);
   }
 }
-
-/* ════════════════════════════════════════════════════════════
-   EXPORT SAVE
-   ──────────────────────────────────────────────────────────
-   Reads the save file back out of the virtual FS and
-   triggers a browser download so the user gets a .sav file
-   they can keep and reload next time.
-════════════════════════════════════════════════════════════ */
-function exportSave() {
-  try {
-    const emu = window.EJS_emulator;
-
-    // 1. Try the built-in EmulatorJS download method first
-    if (emu && typeof emu.downloadSaveFiles === 'function') {
-      emu.downloadSaveFiles();
-      showBanner('ok', '✓ Save exported via EmulatorJS');
-      return;
-    }
-
-    // 2. Fallback: manually read from virtual FS and force download
-    if (emu && emu.FS) {
-      const FS = emu.FS;
-      const name = document.getElementById('game-name-display').textContent;
-      const paths = [
-        '/home/web_user/retroarch/userdata/saves/' + name + '.srm',
-        '/home/web_user/retroarch/userdata/saves/' + name + '.sav',
-      ];
-
-      for (const path of paths) {
-        try {
-          const data = FS.readFile(path);
-          if (data && data.length > 0) {
-            const blob = new Blob([data], { type: 'application/octet-stream' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = name + '.sav';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            showBanner('ok', '✓ Save exported: ' + name + '.sav');
-            return;
-          }
-        } catch(e) { /* path doesn't exist, try next */ }
-      }
-      showBanner('err', '✗ No save data found yet — play the game first, then save in-game');
-      return;
-    }
-
-    showBanner('info', 'ℹ Emulator not running yet');
-  } catch(e) {
-    showBanner('err', '✗ Export failed: ' + e.message);
-  }
-}
-
-/* ════════════════════════════════════════════════════════════
-   RESET
-════════════════════════════════════════════════════════════ */
-function resetEmulator() {
-  const old = document.getElementById('ejs-loader');
-  if (old) old.remove();
-  if (romBlobUrl) { URL.revokeObjectURL(romBlobUrl); romBlobUrl = null; }
-  Object.keys(window).filter(k => k.startsWith('EJS_')).forEach(k => {
-    try { delete window[k]; } catch(e) {}
-  });
-  document.getElementById('game').innerHTML = '';
-  document.getElementById('emulator-section').style.display = 'none';
-  document.getElementById('upload-section').style.display = 'flex';
-  setLoading(false);
-  hideBanner();
-  if (settingsOpen) {
-    settingsOpen = false;
-    document.getElementById('settings-panel').classList.remove('open');
-    document.getElementById('btn-settings').classList.remove('active');
-  }
-  currentSpeed = 1;
-  document.querySelectorAll('.speed-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.speed === '1')
-  );
-  document.getElementById('speed-tag').textContent = '1×';
-  document.getElementById('save-load-tag').style.display = 'none';
-  Object.keys(KEY_MAP).forEach(id => releaseBtn(id));
-}
-
-/* ════════════════════════════════════════════════════════════
-   UI HELPERS
-════════════════════════════════════════════════════════════ */
-let bannerTimer = null;
-
-function showBanner(type, msg) {
-  const b = document.getElementById('save-banner');
-  b.className = type;
-  b.textContent = msg;
-  b.style.display = 'block';
-  b.style.opacity = '1';
-  if (bannerTimer) clearTimeout(bannerTimer);
-  bannerTimer = setTimeout(() => {
-    b.style.opacity = '0';
-    setTimeout(() => { b.style.display = 'none'; }, 500);
-  }, 5000);
-}
-
-function hideBanner() {
-  const b = document.getElementById('save-banner');
-  b.style.display = 'none';
-}
-
-function setLoading(show, title, sub) {
-  const ov = document.getElementById('loading-overlay');
-  if (show) {
-    document.getElementById('loading-text').textContent = title || 'LOADING...';
-    document.getElementById('loading-sub').textContent  = sub   || 'PLEASE WAIT';
-    ov.classList.add('show');
-  } else {
-    ov.classList.remove('show');
-  }
-}
-
-/* ════════════════════════════════════════════════════════════
-   SETTINGS
-════════════════════════════════════════════════════════════ */
-function toggleSettings() {
-  settingsOpen = !settingsOpen;
-  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
-  document.getElementById('btn-settings').classList.toggle('active', settingsOpen);
-}
-
-function setSpeed(val) {
-  currentSpeed = val;
-  document.querySelectorAll('.speed-btn').forEach(b =>
-    b.classList.toggle('active', parseFloat(b.dataset.speed) === val)
-  );
-  document.getElementById('speed-tag').textContent = val + '×';
-  applySpeed(val);
-}
-
-function applySpeed(val) {
-  try {
-    const emu = window.EJS_emulator;
-    if (!emu) return;
-    if (typeof emu.setSpeed === 'function') { emu.setSpeed(val); return; }
-    if (emu.gameManager && typeof emu.gameManager.setSpeed === 'function') {
-      emu.gameManager.setSpeed(val);
-    }
-  } catch(e) { console.warn('[GBA] setSpeed failed:', e); }
-}
-
-function setControlMode(mode) {
-  controlMode = mode;
-  applyControlMode(mode);
-}
-
-function applyControlMode(mode) {
-  const overlay = document.getElementById('touch-overlay');
-  const kbOpt   = document.getElementById('opt-keyboard');
-  const tOpt    = document.getElementById('opt-touch');
-  const note    = document.getElementById('ctrl-note');
-  const mTag    = document.getElementById('ctrl-mode-tag');
-  if (mode === 'touch') {
-    overlay.classList.add('visible');
-    kbOpt.classList.remove('active'); tOpt.classList.add('active');
-    note.textContent = 'Touch mode: D-Pad, A, B, L, R, Start, Select displayed over the game.';
-    mTag.textContent = '👆 Touch Controls';
-  } else {
-    overlay.classList.remove('visible');
-    kbOpt.classList.add('active'); tOpt.classList.remove('active');
-    note.textContent = 'Keyboard mode: Arrow keys + Z/X/Enter/Shift/A/S. No on-screen buttons.';
-    mTag.textContent = '⌨ Keyboard';
-    Object.keys(KEY_MAP).forEach(id => releaseBtn(id));
-  }
-}
-
-/* ════════════════════════════════════════════════════════════
-   TOUCH / MOUSE → KEYBOARD EVENT SIMULATION
-   ──────────────────────────────────────────────────────────
-   EmulatorJS listens for keyboard events.
-   Dispatching real KeyboardEvents is the reliable way to
-   send input from touch buttons into the core.
-════════════════════════════════════════════════════════════ */
-const KEY_MAP = {
-  'tb-up':     { key:'ArrowUp',    code:'ArrowUp',    keyCode:38 },
-  'tb-down':   { key:'ArrowDown',  code:'ArrowDown',  keyCode:40 },
-  'tb-left':   { key:'ArrowLeft',  code:'ArrowLeft',  keyCode:37 },
-  'tb-right':  { key:'ArrowRight', code:'ArrowRight', keyCode:39 },
-  'tb-a':      { key:'z',          code:'KeyZ',       keyCode:90 },
-  'tb-b':      { key:'x',          code:'KeyX',       keyCode:88 },
-  'tb-l':      { key:'a',          code:'KeyA',       keyCode:65 },
-  'tb-r':      { key:'s',          code:'KeyS',       keyCode:83 },
-  'tb-start':  { key:'Enter',      code:'Enter',      keyCode:13 },
-  'tb-select': { key:'Shift',      code:'ShiftLeft',  keyCode:16 },
-};
-
-const heldKeys = new Set();
-
-function fireKey(type, k) {
-  const opts = { key:k.key, code:k.code, keyCode:k.keyCode, which:k.keyCode, bubbles:true, cancelable:true };
-  try { window.dispatchEvent(new KeyboardEvent(type, opts)); } catch(e){}
-  try { document.dispatchEvent(new KeyboardEvent(type, opts)); } catch(e){}
-  try {
-    const canvas = document.querySelector('#game canvas');
-    if (canvas) canvas.dispatchEvent(new KeyboardEvent(type, opts));
-  } catch(e){}
-}
-
-function pressBtn(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add('pressed');
-  const k = KEY_MAP[id];
-  if (!k || heldKeys.has(id)) return;
-  heldKeys.add(id);
-  fireKey('keydown', k);
-}
-
-function releaseBtn(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('pressed');
-  const k = KEY_MAP[id];
-  if (!k || !heldKeys.has(id)) return;
-  heldKeys.delete(id);
-  fireKey('keyup', k);
-}
-
-/* ════════════════════════════════════════════════════════════
-   MULTI-TOUCH — each finger tracked independently
-════════════════════════════════════════════════════════════ */
-const touchMap = new Map();
-
-function btnFromPoint(x, y) {
-  const el = document.elementFromPoint(x, y);
-  if (!el) return null;
-  const btn = el.closest('.t-btn');
-  return btn ? btn.id : null;
-}
-
-function onTouchStart(e) {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    const id = btnFromPoint(t.clientX, t.clientY);
-    if (id) { touchMap.set(t.identifier, id); pressBtn(id); }
-  }
-}
-function onTouchEnd(e) {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    const id = touchMap.get(t.identifier);
-    if (id) {
-      touchMap.delete(t.identifier);
-      if (![...touchMap.values()].includes(id)) releaseBtn(id);
-    }
-  }
-}
-function onTouchMove(e) {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    const prev = touchMap.get(t.identifier);
-    const next = btnFromPoint(t.clientX, t.clientY);
-    if (prev !== next) {
-      if (prev) {
-        touchMap.delete(t.identifier);
-        if (![...touchMap.values()].includes(prev)) releaseBtn(prev);
-      }
-      if (next) { touchMap.set(t.identifier, next); pressBtn(next); }
-    }
-  }
-}
-
-const tOverlay = document.getElementById('touch-overlay');
-tOverlay.addEventListener('touchstart',  onTouchStart, { passive:false });
-tOverlay.addEventListener('touchend',    onTouchEnd,   { passive:false });
-tOverlay.addEventListener('touchcancel', onTouchEnd,   { passive:false });
-tOverlay.addEventListener('touchmove',   onTouchMove,  { passive:false });
-
-// Mouse fallback (desktop)
-Object.keys(KEY_MAP).forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener('mousedown',  e => { e.preventDefault(); pressBtn(id); });
-  el.addEventListener('mouseup',    e => { e.preventDefault(); releaseBtn(id); });
-  el.addEventListener('mouseleave', ()  => releaseBtn(id));
-});
-
-// Release all on window blur / tab hide
-window.addEventListener('blur', () => Object.keys(KEY_MAP).forEach(id => releaseBtn(id)));
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) Object.keys(KEY_MAP).forEach(id => releaseBtn(id));
-});
-</script>
-</body>
-</html>
